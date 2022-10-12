@@ -3,12 +3,15 @@ package config
 import (
 	"encoding/json"
 	"os"
+
+	"go.uber.org/zap/zapcore"
 )
 
 type SymbolConfig struct {
 	ContractNum     int               // 每单委托数量（单位：张）
-	Asset           string            // eg. BTC
-	InitValue       float64           // Asset初始数量，计算利润时会用到
+	BaseAsset       string            // eg. Base Asset: BTC
+	InitValue       float64           // Base Asset初始数量，计算利润时会用到
+	QuoteAsset      string            // Quote Asset: BUSD
 	Cont            int               // 每张多少 u，因为币本位是按照张算的，BTC一张100u，其他一张10u
 	Leverage        int               // 杠杆倍数，初始化时给交易对设置好
 	MaxPositionRate float64           // 最大仓位比例,  双重控制，可以对成交数量做二次限制， MaxPositionRate <= 100 * Leverage
@@ -19,7 +22,7 @@ type SymbolConfig struct {
 
 type Config struct {
 	// 日志配置
-	LogLevel string
+	LogLevel zapcore.Level
 	LogPath  string
 
 	// 电报配置
@@ -54,8 +57,9 @@ type Config struct {
 	CancelShift         float64 // 根据仓位调整撤销订单的距离， 撤销订单的条件要比挂单的条件严格一些，不然挂单之后马上撤单浪费API限额
 	InitQuoteAssetValue float64 // 初始 BUSD/USDT 数量， 统计利润时会用到
 
-	FunctionHedge      int   // 是否启动对冲功能
-	MaxErrorsPerMinute int64 // 每分钟允许出现的 Error 日志数量（超出数量之后退出程序）
+	FunctionHedge      int     // 是否启动对冲功能
+	MaxErrorsPerMinute int64   // 每分钟允许出现的 Error 日志数量（超出数量之后退出程序）
+	MinDeltaRate       float64 // 最小差比例， 价格变动超过这个才进行处理
 }
 
 func LoadConfig(filename string) *Config {
