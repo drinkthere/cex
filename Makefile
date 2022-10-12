@@ -29,7 +29,7 @@ vet:
 
 lint: golangci
 	gofmt -s -w config common
-	$(GOLANGCILINT) run --timeout 10m -E golint,goimports  ./...
+	$(GOLANGCILINT) run --timeout 10m -E errcheck,gosimple,goimports  ./...
 
 golangci:
 ifeq (, $(shell which golangci-lint))
