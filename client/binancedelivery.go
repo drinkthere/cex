@@ -20,6 +20,8 @@ type BinanceDeliveryClient struct {
 	orderClient  *delivery.Client
 	limiter      *rate.Limiter
 	limitProcess int
+	precMap      map[string]int
+	qtyMap       map[string]int
 }
 
 func (cli *BinanceDeliveryClient) Init(config Config) bool {
@@ -28,7 +30,37 @@ func (cli *BinanceDeliveryClient) Init(config Config) bool {
 	limit := rate.Every(1 * time.Second / time.Duration(config.APILimit))
 	cli.limiter = rate.NewLimiter(limit, 60)
 	cli.limitProcess = config.LimitProcess
+	cli.ExchangeInfo()
 	return true
+}
+
+// 获取下单精度
+func (cli *BinanceDeliveryClient) ExchangeInfo() {
+	resp, err := cli.orderClient.NewExchangeInfoService().Do(context.Background())
+	if err != nil {
+		logger.Error("Get ExchangeInfo failed, message is %s", err.Error())
+	}
+	precMap := map[string]int{}
+	qtyMap := map[string]int{}
+	if resp.Symbols != nil {
+		for i := 0; i < len(resp.Symbols); i++ {
+			symbol := resp.Symbols[i].Symbol
+
+			prec := resp.Symbols[i].PricePrecision
+			precMap[symbol] = prec
+
+			qty := resp.Symbols[i].QuantityPrecision
+			qtyMap[symbol] = qty
+		}
+	}
+
+	// fix: some symbol is error
+	precMap["AAVEUSD_PERP"] = 2
+	precMap["AXSUSD_PERP"] = 2
+	precMap["APEUSD_PERP"] = 3
+
+	cli.precMap = precMap
+	cli.qtyMap = qtyMap
 }
 
 // 设置杠杆
@@ -63,6 +95,83 @@ func (cli *BinanceDeliveryClient) GetAccount() *delivery.Account {
 		logger.Error("get delivery account failed, message is %s", err.Error())
 	}
 	return account
+}
+
+// 创建订单，如果成功返回orderID，否则返回空
+// 限价单，GTC
+func (cli *BinanceDeliveryClient) PlaceOrderGTX(order *common.Order) string {
+	if !cli.checkLimit(1) {
+		return ""
+	}
+	if order.ClientOrderID == "" {
+		order.ClientOrderID = common.GetClientOrderID()
+	}
+
+	fPrice := strconv.FormatFloat(order.OrderPrice, 'f', cli.precMap[order.Symbol], 64)
+	fQuantity := strconv.FormatFloat(order.OrderVolume, 'f', cli.qtyMap[order.Symbol], 64)
+
+	logger.Info("BinancePlaceOrder: side=%s, price=%s, quantity=%f, clientID=%s", order.OrderType, fPrice, fQuantity, order.ClientOrderID)
+	if order.OrderType == "buy" {
+		res, err := cli.orderClient.NewCreateOrderService().
+			NewClientOrderID(order.ClientOrderID).
+			Symbol(order.Symbol).
+			Side(delivery.SideTypeBuy).
+			Type(delivery.OrderTypeLimit).
+			TimeInForce(delivery.TimeInForceTypeGTX).
+			Price(fPrice).
+			Quantity(fQuantity).
+			Do(context.Background())
+		if err != nil {
+			logger.Error("binance place order error，side=buy, price=%s, amount=%s, symbol=%s, message is %s",
+				fPrice, fQuantity, order.Symbol, err.Error())
+			return ""
+		}
+		return strconv.FormatInt(res.OrderID, 10)
+	} else if order.OrderType == "sell" {
+		res, err := cli.orderClient.NewCreateOrderService().
+			NewClientOrderID(order.ClientOrderID).
+			Symbol(order.Symbol).
+			Side(delivery.SideTypeSell).
+			Type(delivery.OrderTypeLimit).
+			TimeInForce(delivery.TimeInForceTypeGTX).
+			Price(fPrice).
+			Quantity(fQuantity).
+			Do(context.Background())
+		if err != nil {
+			logger.Error("binance place order error，side=buy, price=%s, amount=%s, symbol=%s, message is %s",
+				fPrice, fQuantity, order.Symbol, err.Error())
+			return ""
+		}
+		return strconv.FormatInt(res.OrderID, 10)
+	}
+	return ""
+}
+
+// 判断API调用频率
+// n为api权重
+func (cli *BinanceDeliveryClient) checkLimit(n int) bool {
+	if cli.limitProcess == 1 {
+		err := cli.limiter.WaitN(context.Background(), n)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return true
+	}
+	ret := cli.limiter.AllowN(time.Now(), n)
+	if !ret {
+		logger.Info("BinanceMM API Limit")
+	}
+	return ret
+}
+
+// 取消所有订单
+func (cli *BinanceDeliveryClient) CancelAllOrders(symbol string) bool {
+	err := cli.orderClient.NewCancelAllOpenOrdersService().Symbol(strings.ToUpper(symbol)).Do(context.Background())
+	if err != nil {
+		logger.Error(err.Error())
+		return false
+	}
+	return true
 }
 
 // --------------------------------------以下是websocket

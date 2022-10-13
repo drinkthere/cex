@@ -89,3 +89,37 @@ func InArray(target string, strArray []string) bool {
 	}
 	return false
 }
+
+func MaxFloat64(list []float64) (max float64) {
+	max = list[0]
+	for _, v := range list {
+		if v > max {
+			max = v
+		}
+	}
+	return
+}
+
+func MinFloat64(list []float64) (min float64) {
+	min = list[0]
+	for _, v := range list {
+		if v < min {
+			min = v
+		}
+	}
+	return
+}
+
+// 判断是否是结算时间
+// @param timeStamp: 当前时间戳，单位s
+func IsSettlement(timeStamp int64) bool {
+	// 不用判断时区，因为每8小时结算一次，所以东八区结算时间一样
+	// 加60是为了方便后面比较
+	tmp := (timeStamp + 60) % (60 * 60 * 24)
+	if (tmp >= 0 && tmp <= 3*60) ||
+		(tmp >= 8*60*60 && tmp <= 8*60*60+3*60) ||
+		(tmp >= 16*60*60 && tmp <= 16*60*60+3*60) {
+		return true
+	}
+	return false
+}

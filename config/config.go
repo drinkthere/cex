@@ -45,6 +45,7 @@ type Config struct {
 
 	MaxOrderNum    int     // 每个方向上最多挂单的数量
 	GapSizePercent float64 // 每单之间的默认间隔，e.g. 0.0002 就是间隔万分之二
+	GapSizeK       float64 // 订单之间的滑动系数，确保间隔越来越大
 	SpreadTimes    float64 // AdjustedGapSize = GapSizePercent * (1 + spread * SpreadTimes), 其中 spread = (max - min)/bidPrice
 
 	// 通过一段时间价格的波动，使用以下公式来对forgive进行调整，因为 套利价差比 > forgive 才会下单，所以可以间接调整下单的难以程度

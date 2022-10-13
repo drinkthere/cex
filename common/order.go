@@ -92,3 +92,18 @@ func (orderBook *OrderBook) UpdateStatus(clientOrderID string, status int) *Orde
 	}
 	return nil
 }
+
+func (orderBook *OrderBook) Size() int {
+	return len(orderBook.Data)
+}
+
+// 添加一个Order到OrderList中
+func (orderBook *OrderBook) Add(order *Order) {
+	orderBook.Mutex.Lock()
+	defer orderBook.Mutex.Unlock()
+
+	_, ok := orderBook.canceledOrders[order.ClientOrderID]
+	if !ok {
+		orderBook.Data = append(orderBook.Data, order)
+	}
+}

@@ -25,9 +25,7 @@ func Init(conf *config.Config) {
 	eventHandler.Init(conf, orderHandler)
 
 	// 初始化 动态配置
-	config.InitDynamicConfig(conf)
-
-	// 初始化统计信息
+	InitDynamicConfig(conf)
 }
 func Start() {
 	// 启动websockets
@@ -38,6 +36,25 @@ func Start() {
 
 	// 获取账户初始状态
 	UpdateAccount()
+
+	// 每100ms计算一遍波动参数
+	go common.Timer(100*time.Millisecond, UpdateDynamicConfigs)
+
+	// 每1s更新一遍订单
+	go common.Timer(1*time.Second, UpdateOrders)
+
+	// 每1s取消一次较远的订单
+
+	// 每1s取消一次距离较近的订单
+
+	// 每分钟更新一次账户状态
+	go common.Timer(60*time.Second, UpdateAccount)
+
+	// 每100ms 检查一下价格，如果指定时间价格没有更新取消挂单或者停掉服务，避免造成亏损
+	go common.Timer(100*time.Millisecond, CheckStatus)
+
+	// 每分钟执行一次，统计除了币安下单 ERROR 之外的 ERROR 信息，超过配置次数就报警
+	go common.Timer(1*time.Minute, CheckErrors)
 
 }
 func ExitProcess() {
