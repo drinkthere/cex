@@ -28,7 +28,7 @@ vet:
 	go vet ./...
 
 lint: golangci
-	gofmt -s -w config common
+	gofmt -s -w config common client
 	$(GOLANGCILINT) run --timeout 10m -E errcheck,gosimple,goimports  ./...
 
 golangci:

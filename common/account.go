@@ -1,7 +1,10 @@
 // 账户信息
 package common
 
-import "math/big"
+import (
+	"math"
+	"math/big"
+)
 
 // 持仓信息
 type DeliveryPosition struct {
@@ -34,6 +37,22 @@ func (account *AccountInfo) Init(exchange string, swapType string) {
 	account.DeliveryPositions = map[string]*DeliveryPosition{}
 }
 
+func (account *AccountInfo) GetPositionsInfo(symbol string) *DeliveryPosition {
+	position, ok := account.DeliveryPositions[symbol]
+	if !ok {
+		account.DeliveryPositions[symbol] = &DeliveryPosition{Symbol: symbol, PositionAbs: 0, Position: 0}
+		position = account.DeliveryPositions[symbol]
+	}
+
+	return position
+}
+
+func (account *AccountInfo) UpdatePosition(symbol string, positionMargin float64) {
+	positionInfo := account.GetPositionsInfo(symbol)
+	positionInfo.Position = positionMargin
+	positionInfo.PositionAbs = math.Abs(positionMargin)
+}
+
 // 账户信息，有可能会有多个账号，如：用不同的账号进行对冲
 type Accounts struct {
 	Data []AccountInfo
@@ -44,4 +63,15 @@ func (accounts *Accounts) AddAccount(exchange string, swapType string) {
 	account := AccountInfo{}
 	account.Init(exchange, swapType)
 	accounts.Data = append(accounts.Data, account)
+}
+
+// get account by exchange
+func (accounts *Accounts) GetAccount(exchange string, swapType string) *AccountInfo {
+	size := len(accounts.Data)
+	for i := 0; i < size; i++ {
+		if exchange == accounts.Data[i].Exchange && swapType == accounts.Data[i].SwapType {
+			return &accounts.Data[i]
+		}
+	}
+	return nil
 }

@@ -13,29 +13,33 @@ import (
 var cfg config.Config
 var ctxt Context
 var orderHandler OrderHandler
+var eventHandler EventHandler
 
 func Init(conf *config.Config) {
 	// 初始化上下文
 	ctxt.Init(conf)
 
-	// 初始化 handlers
+	// 初始化order handlers, 通过HTTPS API 处理订单相关信息
 	orderHandler.Init(conf)
+	// 初始化 event handlers， 通过WSS event处理价格、订单相关消息
+	eventHandler.Init(conf, orderHandler)
 
 	// 初始化 动态配置
 	config.InitDynamicConfig(conf)
 
-	// 初始化 websockets
-
 	// 获取账户初始状态
+	// ShowBalance()
 
 	// 初始化统计信息
 }
 func Start() {
 	// 启动websockets
+	eventHandler.Start()
 
 }
 func ExitProcess() {
-	//
+	// 停止webscoket
+	eventHandler.Stop()
 }
 
 func main() {
