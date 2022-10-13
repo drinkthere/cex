@@ -5,7 +5,6 @@ import (
 	"cex/common"
 	"cex/common/logger"
 	"cex/config"
-
 	"math"
 )
 
@@ -155,7 +154,7 @@ func DeliveryOrderWSHandler(resp *client.OrderWSResponse) {
 					order.Symbol = resp.Order.Symbol
 					order.ClientOrderID = resp.Order.ClientOrderID
 					order.BaseAsset = symbolCfg.BaseAsset
-					order.QuoteAsset = symbolCfg.QuoteAsset
+					order.QuoteAsset = config.QuoteAsset
 					order.Precision = symbolCfg.Precision
 					orderHandler.PlaceHedgeOrder(&order)
 				}
@@ -230,8 +229,8 @@ func UpdatePrice(symbol string, bidPrice float64, bidVolume float64,
 
 		if bidPrice > config.MinAccuracy {
 			buyDelta = math.Abs(bidPrice-priceDataItem.AskPrice) / bidPrice
-			priceDataItem.AskPrice = bidPrice
-			priceDataItem.AskVolume = bidVolume
+			priceDataItem.BidPrice = bidPrice
+			priceDataItem.BidVolume = bidVolume
 		}
 
 		if askPrice > config.MinAccuracy {
@@ -263,5 +262,5 @@ func SpotPriceHandler(resp *client.PriceWSResponse) {
 	}
 
 	go UpdatePrice(resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, timeStamp, "spot")
-	logger.Debug("binance futures bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
+	logger.Debug("binance spot bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
 }

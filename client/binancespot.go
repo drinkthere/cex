@@ -22,6 +22,15 @@ func (cli *BinanceSpotClient) Init(config Config) bool {
 	cli.orderClient = binance.NewClient(config.AccessKey, config.SecretKey)
 	return true
 }
+
+func (cli *BinanceSpotClient) GetAccount() *binance.Account {
+	account, err := cli.orderClient.NewGetAccountService().Do(context.Background())
+	if err != nil {
+		logger.Error("get delivery account failed, message is %s", err.Error())
+	}
+	return account
+}
+
 func (cli *BinanceSpotClient) PlaceMarketOrder(order *common.Order) string {
 	if order.ClientOrderID == "" {
 		order.ClientOrderID = common.GetClientOrderID()
@@ -59,6 +68,8 @@ func (cli *BinanceSpotClient) PlaceMarketOrder(order *common.Order) string {
 	}
 	return ""
 }
+
+// -------------------------以下是websocket相关内容-----------
 
 type BinanceSpotWSClient struct {
 	WSClient
@@ -131,6 +142,7 @@ func (cli *BinanceSpotWSClient) bookTickerMsgHandler(event *binance.WsBookTicker
 			event.BestBidQty, err.Error())
 		return
 	}
+
 	if bidPrice > 0 && bidQty > 0 {
 		item := PriceItem{
 			Price:     bidPrice,

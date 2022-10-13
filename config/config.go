@@ -11,7 +11,7 @@ type SymbolConfig struct {
 	ContractNum     int     // 每单委托数量（单位：张）
 	BaseAsset       string  // eg. Base Asset: BTC
 	InitValue       float64 // Base Asset初始数量，计算利润时会用到
-	QuoteAsset      string  // Quote Asset: BUSD
+	InitHedgeValue  float64 // Base Asset 在对冲账号中的初始数量，计算利润时会用到
 	Cont            int     // 每张多少 u，因为币本位是按照张算的，BTC一张100u，其他一张10u
 	Leverage        int     // 杠杆倍数，初始化时给交易对设置好
 	MaxPositionRate float64 // 最大仓位比例,  双重控制，可以对成交数量做二次限制， MaxPositionRate <= 100 * Leverage
@@ -55,6 +55,7 @@ type Config struct {
 
 	TickerShift         float64 // 根据仓位修正现货和U本位合约买卖价格时的系数
 	CancelShift         float64 // 根据仓位调整撤销订单的距离， 撤销订单的条件要比挂单的条件严格一些，不然挂单之后马上撤单浪费API限额
+	QuoteAsset          string  // Quote Asset: BUSD
 	InitQuoteAssetValue float64 // 初始 BUSD/USDT 数量， 统计利润时会用到
 
 	FunctionHedge      int     // 是否启动对冲功能

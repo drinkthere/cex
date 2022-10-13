@@ -48,6 +48,10 @@ type OrderBook struct {
 	Mutex          sync.RWMutex
 }
 
+func (orderBook *OrderBook) Init() {
+	orderBook.canceledOrders = make(map[string]*Order)
+}
+
 // 通过ClientOrderID删除对应的Order
 func (orderBook *OrderBook) DeleteByClientOrderID(clientOrderID string) *Order {
 	orderBook.Mutex.Lock()

@@ -28,6 +28,18 @@ func (handler *OrderHandler) Init(cfg *config.Config) {
 	handler.BinanceFuturesOrderClient.Init(binanceConfig)
 	handler.BinanceSpotOrderClient.Init(binanceConfig)
 
+	handler.BuyOrders = map[string]*common.OrderBook{}
+	handler.SellOrders = map[string]*common.OrderBook{}
+	for _, symbol := range ctxt.Symbols {
+		handler.BuyOrders[symbol] = &common.OrderBook{}
+		handler.BuyOrders[symbol].Init()
+		handler.SellOrders[symbol] = &common.OrderBook{}
+		handler.SellOrders[symbol].Init()
+		// 设置交易对的杠杆
+		symbolCfg := cfg.SymbolConfigs[symbol]
+		handler.BinanceDeliveryOrderClient.ChangeLeverage(symbol, symbolCfg.Leverage)
+	}
+
 	handler.MinAccuracy = cfg.MinAccuracy
 }
 

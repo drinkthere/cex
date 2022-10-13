@@ -27,14 +27,17 @@ func Init(conf *config.Config) {
 	// 初始化 动态配置
 	config.InitDynamicConfig(conf)
 
-	// 获取账户初始状态
-	// ShowBalance()
-
 	// 初始化统计信息
 }
 func Start() {
 	// 启动websockets
 	eventHandler.Start()
+
+	// 确保 ws 正常启动和监听
+	time.Sleep(5 * time.Second)
+
+	// 获取账户初始状态
+	UpdateAccount()
 
 }
 func ExitProcess() {

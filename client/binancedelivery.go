@@ -31,6 +31,16 @@ func (cli *BinanceDeliveryClient) Init(config Config) bool {
 	return true
 }
 
+// 设置杠杆
+func (cli *BinanceDeliveryClient) ChangeLeverage(symbol string, leverage int) {
+	logger.Debug("==change symbol=%s leverage to %d", symbol, leverage)
+	resp, err := cli.orderClient.NewChangeLeverageService().Symbol(symbol).Leverage(leverage).Do(context.Background())
+	if err != nil {
+		logger.Error("change leverage failed, message is %s", err.Error())
+	}
+	logger.Debug("==symbol=%s's leverage has been changed to %+v", symbol, resp)
+}
+
 func (cli *BinanceDeliveryClient) GetListenKey() string {
 	listenKey, err := cli.orderClient.NewStartUserStreamService().Do(context.Background())
 	if err != nil {
@@ -45,6 +55,14 @@ func (cli *BinanceDeliveryClient) KeepAliveListenKey(listenKey string) {
 	if err != nil {
 		logger.Error(err.Error())
 	}
+}
+
+func (cli *BinanceDeliveryClient) GetAccount() *delivery.Account {
+	account, err := cli.orderClient.NewGetAccountService().Do(context.Background())
+	if err != nil {
+		logger.Error("get delivery account failed, message is %s", err.Error())
+	}
+	return account
 }
 
 // --------------------------------------以下是websocket

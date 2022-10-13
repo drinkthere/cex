@@ -75,11 +75,9 @@ func (context *Context) Init(cfg *config.Config) {
 
 		// 初始化币本位symbol的上下文
 		context.GetSymbolContext(symbol)
-		// 获取币本位交易对的详细配置
-		symbolCfg := cfg.SymbolConfigs[symbol]
 
 		// futuresSymbol 是U本位的symbol，如: BTCBUSD, 这里做个映射，方便后面获取对应值
-		futuresSymbol := common.FormatFuturesSymbol(symbol, symbolCfg.QuoteAsset)
+		futuresSymbol := common.FormatFuturesSymbol(symbol, cfg.QuoteAsset)
 		// SymbolMap["BTCBUSD"] => ["BTCUSD_PERP", "BTCUSD_0930"]
 		context.SymbolMap[futuresSymbol] = append(context.SymbolMap[futuresSymbol], symbol)
 
