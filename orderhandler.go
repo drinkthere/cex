@@ -505,11 +505,6 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 			}
 		}
 		orderBook.Mutex.RUnlock()
-
-		for i := orderBook.Size() - 1; orderBook.Size()-i <= size; i-- {
-			cancelOrders = append(cancelOrders, orderBook.Data[i])
-		}
-
 	}
 
 	logger.Info("CancelCloseDistanceOrders: %+v", cancelOrders)
