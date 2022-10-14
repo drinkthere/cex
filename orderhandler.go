@@ -479,7 +479,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 			if prevOrder.OrderPrice-currOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
 				cancelOrders = append(cancelOrders, currOrder)
 			} else {
-				cursor++
+				cursor--
 			}
 		}
 		orderBook.Mutex.RUnlock()
