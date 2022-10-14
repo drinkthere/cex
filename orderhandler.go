@@ -67,9 +67,9 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 			continue
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
-		gap := (symbolContext.BidPrice - order.OrderPrice) / symbolContext.BidPrice
-		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.BidPrice, gap)
-		if gap > dynamicConfig.AdjustedGapSize {
+		gapSize := symbolContext.BidPrice - order.OrderPrice
+		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.BidPrice, gapSize)
+		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
 		}
 
@@ -98,9 +98,9 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
-		gap := (order.OrderPrice - symbolContext.AskPrice) / symbolContext.AskPrice
-		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.AskPrice, gap)
-		if gap > dynamicConfig.AdjustedGapSize {
+		gapSize := (order.OrderPrice - symbolContext.AskPrice)
+		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.AskPrice, gapSize)
+		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
 		}
 
