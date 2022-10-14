@@ -67,7 +67,9 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 			continue
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
-		if (symbolContext.BidPrice-order.OrderPrice)/symbolContext.BidPrice > dynamicConfig.AdjustedGapSize {
+		gap := (symbolContext.BidPrice - order.OrderPrice) / symbolContext.BidPrice
+		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.BidPrice, gap)
+		if gap > dynamicConfig.AdjustedGapSize {
 			continue
 		}
 
@@ -96,7 +98,9 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
-		if (order.OrderPrice-symbolContext.AskPrice)/symbolContext.AskPrice > dynamicConfig.AdjustedGapSize {
+		gap := (order.OrderPrice - symbolContext.AskPrice) / symbolContext.AskPrice
+		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.AskPrice, gap)
+		if gap > dynamicConfig.AdjustedGapSize {
 			continue
 		}
 
@@ -109,7 +113,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
 		if diffRatio < -(cfg.Commission+cfg.Loss)*positionRatio {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
 				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, diffRatio, threashodl, positionRatio)
 		}
 	}
@@ -271,7 +275,7 @@ func (handler *OrderHandler) UpdateOrders() {
 				tmpCreateOrderNum < cfg.MaxOrderOneStep {
 
 				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
-				logger.Info("===CreateOrder: index: %d, num: %d, bidPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f",
+				logger.Info("===CreateOrder: index: %d, num: %d, bidPrice: %.2f, adjustedDeliveryBuyPrice: %.2f, adjustedSpotBuyPrice: %.2f, adjustedFuturesBuyPrice: %.2f",
 					i, tempOrderNum, symbolContext.BidPrice, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
 				order := common.Order{Symbol: symbol, OrderType: "buy", OrderVolume: contractNum,
 					OrderPrice: buyPrice}
