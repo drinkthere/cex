@@ -468,7 +468,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 	orderBook := handler.BuyOrders[symbol]
 	dynamicConfigs := GetDynamicConfig(symbol)
 	size := orderBook.Size()
-	if size > 0 {
+	if size > 1 {
 		orderBook.Sort()
 		orderBook.Mutex.RLock()
 
@@ -487,7 +487,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 	// sell orders
 	orderBook = handler.SellOrders[symbol]
 	size = orderBook.Size()
-	if size > 0 {
+	if size > 1 {
 		orderBook.Sort()
 		orderBook.Mutex.RLock()
 		cursor := 0
