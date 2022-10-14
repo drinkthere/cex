@@ -4,3 +4,4 @@ bin/*
 vendor
 logs
 config/config.json
+config/config.local.json

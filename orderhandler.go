@@ -46,8 +46,115 @@ func (handler *OrderHandler) Init(cfg *config.Config) {
 
 // 取消价格不合适的订单
 func (handler *OrderHandler) CancelOrders(symbol string) {
+	timestamp := common.GetTimestampInMS()
+	symbolContext := ctxt.GetSymbolContext(symbol)
+	// 每200ms取消2次
+	if symbolContext == nil || timestamp-symbolContext.LastCancelTime < 200 {
+		return
+	}
 
+	cancelOrders := []*common.Order{}
+
+	dynamicConfig := GetDynamicConfig(symbol)
+	account := ctxt.Accounts.GetAccount(cfg.Exchange, cfg.SwapType)
+	position := account.GetPositionsInfo(symbol)
+	// buy orders
+	orderBook := handler.BuyOrders[symbol]
+	orderBook.Mutex.RLock()
+	for i := 0; i < len(orderBook.Data); i++ {
+		order := orderBook.Data[i]
+		if order.Status != common.NEW && order.Status != common.CREATE && order.Status != common.CREATED {
+			continue
+		}
+		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
+		if (symbolContext.BidPrice-order.OrderPrice)/symbolContext.BidPrice > dynamicConfig.AdjustedGapSize {
+			continue
+		}
+
+		// 判断如果当前币本位bid价格和现货的ask价格的价差，如果手续费返点cover不住，就取消。
+		// 加一个系数K，当仓位过高时，可以接受亏一些出货
+		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
+		diffRatio := (spotPriceItem.AskPrice - symbolContext.BidPrice) / symbolContext.BidPrice
+		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
+		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
+		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
+		if diffRatio < -(cfg.Commission+cfg.Loss)*positionRatio {
+			cancelOrders = append(cancelOrders, order)
+			logger.Info("===CancelOrder: index: %d, bidPrice: %.2f, orderPrice: %.2f, spotAskPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
+				i, symbolContext.BidPrice, order.OrderPrice, spotPriceItem.AskPrice, diffRatio, threashodl, positionRatio)
+		}
+	}
+	orderBook.Mutex.RUnlock()
+
+	// sell orders
+	orderBook = handler.SellOrders[symbol]
+	orderBook.Mutex.RLock()
+	for i := 0; i < len(orderBook.Data); i++ {
+		order := orderBook.Data[i]
+		if order.Status != common.NEW && order.Status != common.CREATE && order.Status != common.CREATED {
+			continue
+		}
+
+		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
+		if (order.OrderPrice-symbolContext.AskPrice)/symbolContext.AskPrice > dynamicConfig.AdjustedGapSize {
+			continue
+		}
+
+		// 判断如果当前币本位ask价格和现货的bid价格的价差，如果手续费返点cover不住，就取消。
+		// 加一个系数K，当仓位过高时，可以接受亏一些出货
+		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
+		diffRatio := (symbolContext.AskPrice - spotPriceItem.BidPrice) / symbolContext.AskPrice
+		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
+		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
+		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
+		if diffRatio < -(cfg.Commission+cfg.Loss)*positionRatio {
+			cancelOrders = append(cancelOrders, order)
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
+				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, diffRatio, threashodl, positionRatio)
+		}
+	}
+	orderBook.Mutex.RUnlock()
+
+	logger.Info("CancelOrders: %d", len(cancelOrders))
+	handler.CancelOrdersByClientID(cancelOrders)
+
+	if len(cancelOrders) > 2 {
+		symbolContext.LastCancelTime = timestamp
+	}
 }
+
+// 取消订单（必须相同交易对）
+func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
+	clientOrderIDs := []string{}
+	clientOrderIDMap := make(map[string]*common.Order)
+	for _, order := range orders {
+		clientOrderIDs = append(clientOrderIDs, order.ClientOrderID)
+		clientOrderIDMap[order.ClientOrderID] = order
+	}
+
+	size := len(clientOrderIDs)
+	if size <= 0 {
+		return
+	}
+	symbol := orders[0].Symbol
+
+	// 每次最多取消10个订单
+	for i := 0; i < size; i += 10 {
+		end := i + 10
+		if end > size {
+			end = size
+		}
+		lst := clientOrderIDs[i:end]
+		successIDs, _ := handler.BinanceDeliveryOrderClient.CancelOrdersByClientID(&lst, symbol)
+		for _, id := range successIDs {
+			_, ok := clientOrderIDMap[id]
+			if ok {
+				clientOrderIDMap[id].Status = common.CANCEL
+			}
+		}
+	}
+}
+
 func (handler *OrderHandler) CancelAllOrdersWithSymbol(symbol string) bool {
 	buyOrderBook := handler.BuyOrders[symbol]
 	sellOrderBook := handler.SellOrders[symbol]
@@ -154,19 +261,22 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的buyPrice
+			logger.Info("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
-				position.PositionAbs < contractNum*float64(symbolCfg.Leverage) {
-				if tmpCreateOrderNum+orderBook.Size() < cfg.MaxOrderNum {
-					logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
-					order := common.Order{Symbol: symbol, OrderType: "buy", OrderVolume: contractNum,
-						OrderPrice: buyPrice}
-					orders = append(orders, &order)
-					tmpCreateOrderNum++
-				}
+				position.PositionAbs < contractNum*float64(symbolCfg.Leverage) &&
+				tmpCreateOrderNum < cfg.MaxOrderOneStep {
+
+				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
+				logger.Info("===CreateOrder: index: %d, num: %d, bidPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f",
+					i, tempOrderNum, symbolContext.BidPrice, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
+				order := common.Order{Symbol: symbol, OrderType: "buy", OrderVolume: contractNum,
+					OrderPrice: buyPrice}
+				orders = append(orders, &order)
+				tmpCreateOrderNum++
 
 			}
 
@@ -206,21 +316,22 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的sellPrice
+			logger.Info("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
-				position.Position > -contractNum*float64(symbolCfg.Leverage) {
-
-				if tmpCreateOrderNum+orderBook.Size() < cfg.MaxOrderNum {
-					logger.Info("===CreateOrder: index: %d, num: %d, askPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f", i, tempOrderNum, symbolContext.AskPrice, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
-					order := common.Order{Symbol: symbol, OrderType: "sell", OrderVolume: contractNum,
-						OrderPrice: sellPrice}
-					orders = append(orders, &order)
-					tmpCreateOrderNum++
-				}
+				position.Position > -contractNum*float64(symbolCfg.Leverage) &&
+				tmpCreateOrderNum < cfg.MaxOrderOneStep {
+				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
+				logger.Info("===CreateOrder: index: %d, num: %d, askPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f",
+					i, tempOrderNum, symbolContext.AskPrice, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
+				order := common.Order{Symbol: symbol, OrderType: "sell", OrderVolume: contractNum,
+					OrderPrice: sellPrice}
+				orders = append(orders, &order)
+				tmpCreateOrderNum++
 			}
 
 			if !inRange && (adjustedDeliverySellPrice < adjustedSpotSellPrice || adjustedDeliverySellPrice < adjustedFuturesSellPrice) {
@@ -291,6 +402,102 @@ func (handler *OrderHandler) PlaceOrder(order *common.Order) {
 	}
 }
 
+// 取消距离较远的订单
+func (handler *OrderHandler) CancelFarOrders(symbol string) {
+	timestamp := common.GetTimestampInMS()
+	// 每2s取消2次
+	symbolContext := ctxt.GetSymbolContext(symbol)
+	if symbolContext == nil || timestamp-symbolContext.LastCancelFarTime < 2000 {
+		return
+	}
+
+	cancelOrders := []*common.Order{}
+
+	// buy orders
+	orderBook := handler.BuyOrders[symbol]
+	size := orderBook.Size() - cfg.MaxOrderNum
+	if size > 0 {
+		orderBook.Sort()
+
+		orderBook.Mutex.RLock()
+		for i := 0; i < size; i++ {
+			cancelOrders = append(cancelOrders, orderBook.Data[i])
+		}
+		orderBook.Mutex.RUnlock()
+	}
+
+	// sell orders
+	orderBook = handler.SellOrders[symbol]
+	size = orderBook.Size() - cfg.MaxOrderNum
+	if size > 0 {
+		orderBook.Sort()
+
+		orderBook.Mutex.RLock()
+		for i := orderBook.Size() - 1; orderBook.Size()-i <= size; i-- {
+			cancelOrders = append(cancelOrders, orderBook.Data[i])
+		}
+		orderBook.Mutex.RUnlock()
+	}
+
+	if len(cancelOrders) > 2 {
+		symbolContext.LastCancelFarTime = timestamp
+	}
+	logger.Info("CancelFarOrders: %+v", cancelOrders)
+	handler.CancelOrdersByClientID(cancelOrders)
+}
+
+// 取消间距较劲的订单
+func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
+	cancelOrders := []*common.Order{}
+
+	// buy orders
+	orderBook := handler.BuyOrders[symbol]
+	dynamicConfigs := GetDynamicConfig(symbol)
+	size := orderBook.Size()
+	if size > 0 {
+		orderBook.Sort()
+		orderBook.Mutex.RLock()
+
+		cursor := size - 1
+		for i := size - 2; i >= 0; i-- {
+			currOrder := orderBook.Data[i]
+			prevOrder := orderBook.Data[cursor]
+			if (prevOrder.OrderPrice-currOrder.OrderPrice)/prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
+				cancelOrders = append(cancelOrders, currOrder)
+			} else {
+				cursor++
+			}
+		}
+		orderBook.Mutex.RUnlock()
+	}
+	// sell orders
+	orderBook = handler.SellOrders[symbol]
+	size = orderBook.Size()
+	if size > 0 {
+		orderBook.Sort()
+		orderBook.Mutex.RLock()
+		cursor := 0
+		for i := 1; i < size; i++ {
+			currOrder := orderBook.Data[i]
+			prevOrder := orderBook.Data[cursor]
+			if (currOrder.OrderPrice-prevOrder.OrderPrice)/prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
+				cancelOrders = append(cancelOrders, currOrder)
+			} else {
+				cursor++
+			}
+		}
+		orderBook.Mutex.RUnlock()
+
+		for i := orderBook.Size() - 1; orderBook.Size()-i <= size; i-- {
+			cancelOrders = append(cancelOrders, orderBook.Data[i])
+		}
+
+	}
+
+	logger.Info("CancelCloseDistanceOrders: %+v", cancelOrders)
+	handler.CancelOrdersByClientID(cancelOrders)
+}
+
 func getAdjustedPrice(price float64, ratio, position float64) float64 {
 	if position > 0 {
 		return price * ratio
@@ -303,4 +510,17 @@ func getAdjustedPrice(price float64, ratio, position float64) float64 {
 // 更新订单
 func UpdateOrders() {
 	orderHandler.UpdateOrders()
+}
+
+// 取消距离较远的订单
+func CancelFarOrders() {
+	for _, symbol := range ctxt.Symbols {
+		orderHandler.CancelFarOrders(symbol)
+	}
+}
+
+func CancelCloseDistanceOrders() {
+	for _, symbol := range ctxt.Symbols {
+		orderHandler.CancelCloseDistanceOrders(symbol)
+	}
 }

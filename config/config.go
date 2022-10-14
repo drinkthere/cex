@@ -8,16 +8,16 @@ import (
 )
 
 type SymbolConfig struct {
-	ContractNum     int     // 每单委托数量（单位：张）
-	BaseAsset       string  // eg. Base Asset: BTC
-	InitValue       float64 // Base Asset初始数量，计算利润时会用到
-	InitHedgeValue  float64 // Base Asset 在对冲账号中的初始数量，计算利润时会用到
-	Cont            int     // 每张多少 u，因为币本位是按照张算的，BTC一张100u，其他一张10u
-	Leverage        int     // 杠杆倍数，初始化时给交易对设置好
-	MaxPositionRate float64 // 最大仓位比例,  双重控制，可以对成交数量做二次限制， MaxPositionRate <= 100 * Leverage
-	MinHedgeSize    float64 // 最小对冲数量, 需要对冲时，如果不够这个量就不对冲。e.g. 币安限制BTC最小交易额度是0.001
-	Precision       [2]int  // BTCBUSD => [4, 2] BTC的精度是4，USD的精度是2
-	EffectiveNum    float64 // 获取交易对报价时，quantity 需要大于这个值才认为有效（特别是从depth消息中获取价格时）
+	ContractNum    int     // 每单委托数量（单位：张）
+	BaseAsset      string  // eg. Base Asset: BTC
+	InitValue      float64 // Base Asset初始数量，计算利润时会用到
+	InitHedgeValue float64 // Base Asset 在对冲账号中的初始数量，计算利润时会用到
+	Cont           int     // 每张多少 u，因为币本位是按照张算的，BTC一张100u，其他一张10u
+	Leverage       int     // 杠杆倍数，初始化时给交易对设置好
+	MaxContractNum int     // 最大可以开的张数， 也是用来限制单方向最大持仓数量的
+	MinHedgeSize   float64 // 最小对冲数量, 需要对冲时，如果不够这个量就不对冲。e.g. 币安限制BTC最小交易额度是0.001
+	Precision      [2]int  // BTCBUSD => [4, 2] BTC的精度是4，USD的精度是2
+	EffectiveNum   float64 // 获取交易对报价时，quantity 需要大于这个值才认为有效（特别是从depth消息中获取价格时）
 }
 
 type Config struct {
@@ -43,10 +43,11 @@ type Config struct {
 	Symbols       []string                // 要套利的交易对
 	SymbolConfigs map[string]SymbolConfig // 交易对的详细配置
 
-	MaxOrderNum    int     // 每个方向上最多挂单的数量
-	GapSizePercent float64 // 每单之间的默认间隔，e.g. 0.0002 就是间隔万分之二
-	GapSizeK       float64 // 订单之间的滑动系数，确保间隔越来越大
-	SpreadTimes    float64 // AdjustedGapSize = GapSizePercent * (1 + spread * SpreadTimes), 其中 spread = (max - min)/bidPrice
+	MaxOrderNum     int     // 每个方向上最多挂单的数量
+	MaxOrderOneStep int     // 一次挂单，每个方向最多挂几单
+	GapSizePercent  float64 // 每单之间的默认间隔，e.g. 0.0002 就是间隔万分之二
+	GapSizeK        float64 // 订单之间的滑动系数，确保间隔越来越大
+	SpreadTimes     float64 // AdjustedGapSize = GapSizePercent * (1 + spread * SpreadTimes), 其中 spread = (max - min)/bidPrice
 
 	// 通过一段时间价格的波动，使用以下公式来对forgive进行调整，因为 套利价差比 > forgive 才会下单，所以可以间接调整下单的难以程度
 	ForgivePercent          float64 // 套利价差比 > forgive才下单，forgive会随着spread的变化而变动
@@ -63,6 +64,8 @@ type Config struct {
 	MaxErrorsPerMinute int64   // 每分钟允许出现的 Error 日志数量（超出数量之后退出程序）
 	MinDeltaRate       float64 // 最小差比例， 价格变动超过这个才进行处理
 	MinAccuracy        float64 // 价格最小精度
+	Commission         float64 // 手续费返点
+	Loss               float64 // 让利亏损
 }
 
 func LoadConfig(filename string) *Config {

@@ -23,3 +23,5 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 )
+
+replace github.com/adshao/go-binance/v2 v2.3.9 => github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014032242-848b342a6a73

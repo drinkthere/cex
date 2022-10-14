@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -41,6 +42,10 @@ func (order *Order) FormatString() string {
 }
 
 type OrderList []*Order
+
+func (lst OrderList) Len() int           { return len(lst) }
+func (lst OrderList) Less(i, j int) bool { return lst[i].OrderPrice < lst[j].OrderPrice }
+func (lst OrderList) Swap(i, j int)      { lst[i], lst[j] = lst[j], lst[i] }
 
 type OrderBook struct {
 	Data           OrderList
@@ -106,4 +111,11 @@ func (orderBook *OrderBook) Add(order *Order) {
 	if !ok {
 		orderBook.Data = append(orderBook.Data, order)
 	}
+}
+
+// 将订单按照价格从小到大排序
+func (orderBook *OrderBook) Sort() {
+	orderBook.Mutex.Lock()
+	defer orderBook.Mutex.Unlock()
+	sort.Sort(orderBook.Data)
 }
