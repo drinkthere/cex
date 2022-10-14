@@ -476,7 +476,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		for i := size - 2; i >= 0; i-- {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
-			if (prevOrder.OrderPrice-currOrder.OrderPrice)/prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
+			if prevOrder.OrderPrice-currOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
 				cancelOrders = append(cancelOrders, currOrder)
 			} else {
 				cursor++
@@ -494,7 +494,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		for i := 1; i < size; i++ {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
-			if (currOrder.OrderPrice-prevOrder.OrderPrice)/prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
+			if currOrder.OrderPrice-prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
 				cancelOrders = append(cancelOrders, currOrder)
 			} else {
 				cursor++
