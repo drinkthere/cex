@@ -6,8 +6,8 @@ github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dR
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014032242-848b342a6a73 h1:zPJMNWE1qpa2/+oangx5+88AmTP5IeS02NocpZe61ew=
-github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014032242-848b342a6a73/go.mod h1:Z3MCnWI0gHC4Rea8TWiF3aN1t4nV9z3CaU/TeHcKsLM=
+github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014063512-fe67fe05a09b h1:tQMu6xPQIL38ZRoi/L8xU2pE2lz4Ddc8eZJYiXSfayo=
+github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014063512-fe67fe05a09b/go.mod h1:Z3MCnWI0gHC4Rea8TWiF3aN1t4nV9z3CaU/TeHcKsLM=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
