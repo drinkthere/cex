@@ -68,7 +68,8 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
 		gapSize := symbolContext.BidPrice - order.OrderPrice
-		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.BidPrice, gapSize)
+		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
 		}
@@ -76,14 +77,14 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 判断如果当前币本位bid价格和现货的ask价格的价差，如果手续费返点cover不住，就取消。
 		// 加一个系数K，当仓位过高时，可以接受亏一些出货
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
-		diffRatio := (spotPriceItem.AskPrice - symbolContext.BidPrice) / symbolContext.BidPrice
+		lossRatio := (spotPriceItem.BidPrice - symbolContext.AskPrice) / symbolContext.AskPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
 		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
-		if diffRatio < -(cfg.Commission+cfg.Loss)*positionRatio {
+		if lossRatio > threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, bidPrice: %.2f, orderPrice: %.2f, spotAskPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
-				i, symbolContext.BidPrice, order.OrderPrice, spotPriceItem.AskPrice, diffRatio, threashodl, positionRatio)
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
+				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, lossRatio, threashodl, positionRatio)
 		}
 	}
 	orderBook.Mutex.RUnlock()
@@ -98,8 +99,9 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
-		gapSize := (order.OrderPrice - symbolContext.AskPrice)
-		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f", order.OrderPrice, symbolContext.AskPrice, gapSize)
+		gapSize := order.OrderPrice - symbolContext.AskPrice
+		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
 		}
@@ -107,14 +109,14 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 判断如果当前币本位ask价格和现货的bid价格的价差，如果手续费返点cover不住，就取消。
 		// 加一个系数K，当仓位过高时，可以接受亏一些出货
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
-		diffRatio := (symbolContext.AskPrice - spotPriceItem.BidPrice) / symbolContext.AskPrice
+		lossRatio := (spotPriceItem.AskPrice - symbolContext.BidPrice) / symbolContext.BidPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
 		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
-		if diffRatio < -(cfg.Commission+cfg.Loss)*positionRatio {
+		if lossRatio > threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
-				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, diffRatio, threashodl, positionRatio)
+			logger.Info("===CancelOrder: index: %d, bidPrice: %.2f, orderPrice: %.2f, spotAskPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
+				i, symbolContext.BidPrice, order.OrderPrice, spotPriceItem.AskPrice, lossRatio, threashodl, positionRatio)
 		}
 	}
 	orderBook.Mutex.RUnlock()
@@ -179,6 +181,14 @@ func (handler *OrderHandler) CancelAllOrders() bool {
 		if len(buyOrderBook.Data) > 0 || len(sellOrderBook.Data) > 0 {
 			handler.BinanceDeliveryOrderClient.CancelAllOrders(symbol)
 		}
+	}
+	return true
+}
+
+func (handler *OrderHandler) CancelAllOrdersWithoutCheckOrderBook() bool {
+	logger.Info("CancelAllOrdersWithoutCheckOrderBook order size: %d", handler.Size())
+	for _, symbol := range ctxt.Symbols {
+		handler.BinanceDeliveryOrderClient.CancelAllOrders(symbol)
 	}
 	return true
 }

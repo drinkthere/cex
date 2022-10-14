@@ -60,8 +60,16 @@ func Start() {
 
 }
 func ExitProcess() {
+	// 取消所有订单, 不判断本地orders
+	logger.Info("DelContext cancel all orders")
+	for _, symbolContext := range ctxt.symbolContexts {
+		symbolContext.Risk = 1
+	}
+	orderHandler.CancelAllOrdersWithoutCheckOrderBook()
+
 	// 停止webscoket
 	eventHandler.Stop()
+	os.Exit(1)
 }
 
 func main() {
