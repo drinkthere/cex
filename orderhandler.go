@@ -355,7 +355,7 @@ func (handler *OrderHandler) UpdateOrders() {
 		orderBook.Mutex.RUnlock()
 	}
 
-	logger.Info("CreateOrders: %d", len(orders))
+	logger.Debug("CreateOrders: %d", len(orders))
 	handler.PlaceOrders(orders)
 }
 
@@ -476,9 +476,9 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		for i := size - 3; i >= 0; i-- {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
-			logger.Info("===buy, curOrderPrice: %.2f, prevOrderPrice: %.2f, gapSize: %.2f, adjustedGapSize: %.2f",
-				currOrder.OrderPrice, prevOrder.OrderPrice, prevOrder.OrderPrice-currOrder.OrderPrice, dynamicConfigs.AdjustedGapSize)
 			if prevOrder.OrderPrice-currOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
+				logger.Info("===buy, curOrderPrice: %.2f, prevOrderPrice: %.2f, gapSize: %.2f, adjustedGapSize: %.2f",
+					currOrder.OrderPrice, prevOrder.OrderPrice, prevOrder.OrderPrice-currOrder.OrderPrice, dynamicConfigs.AdjustedGapSize)
 				cancelOrders = append(cancelOrders, currOrder)
 			} else {
 				cursor--
@@ -507,7 +507,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		orderBook.Mutex.RUnlock()
 	}
 
-	logger.Info("CancelCloseDistanceOrders: %+v", cancelOrders)
+	logger.Debug("CancelCloseDistanceOrders: %+v", cancelOrders)
 	handler.CancelOrdersByClientID(cancelOrders)
 }
 

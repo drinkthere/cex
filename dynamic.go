@@ -59,7 +59,7 @@ func UpdateDynamicConfig(symbol string, dynamicConfig *DynamicConfig) {
 		dynamicConfig.AdjustedForgivePercent = forgivePercent - (math.Pow((spread/cfg.ExponentBaseDenominator), cfg.ExponentPower))/cfg.Denominator
 	}
 
-	if len(dynamicConfig.PriceList) > 3000 {
+	if len(dynamicConfig.PriceList) == 3000 {
 		dynamicConfig.PriceList = dynamicConfig.PriceList[1:]
 	}
 
