@@ -56,7 +56,6 @@ type Config struct {
 	Denominator             float64 // (math.Pow((spread/100), 0.75))/4 公式中的中的4
 
 	TickerShift         float64 // 根据仓位修正现货和U本位合约买卖价格时的系数
-	CancelShift         float64 // 根据仓位调整撤销订单的距离， 撤销订单的条件要比挂单的条件严格一些，不然挂单之后马上撤单浪费API限额
 	QuoteAsset          string  // Quote Asset: BUSD
 	InitQuoteAssetValue float64 // 初始 BUSD/USDT 数量， 统计利润时会用到
 

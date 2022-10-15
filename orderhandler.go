@@ -68,7 +68,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
 		gapSize := symbolContext.BidPrice - order.OrderPrice
-		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+		logger.Debug("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
 			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
@@ -83,7 +83,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
 		if lossRatio > threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.2f, threashold: %.2f, positionRatio: %.2f",
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.2f, positionRatio: %.2f",
 				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, lossRatio, threashodl, positionRatio)
 		}
 	}
@@ -100,7 +100,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
 		gapSize := order.OrderPrice - symbolContext.AskPrice
-		logger.Info("orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+		logger.Debug("===orderPrice:%.2f, deliveryAskPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
 			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
@@ -468,12 +468,12 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 	orderBook := handler.BuyOrders[symbol]
 	dynamicConfigs := GetDynamicConfig(symbol)
 	size := orderBook.Size()
-	if size > 1 {
+	if size > 2 {
 		orderBook.Sort()
 		orderBook.Mutex.RLock()
 
-		cursor := size - 1
-		for i := size - 2; i >= 0; i-- {
+		cursor := size - 2
+		for i := size - 3; i >= 0; i-- {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
 			logger.Info("===buy, curOrderPrice: %.2f, prevOrderPrice: %.2f, gapSize: %.2f, adjustedGapSize: %.2f",
@@ -489,11 +489,11 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 	// sell orders
 	orderBook = handler.SellOrders[symbol]
 	size = orderBook.Size()
-	if size > 1 {
+	if size > 2 {
 		orderBook.Sort()
 		orderBook.Mutex.RLock()
-		cursor := 0
-		for i := 1; i < size; i++ {
+		cursor := 1
+		for i := 2; i < size; i++ {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
 			if currOrder.OrderPrice-prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
