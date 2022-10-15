@@ -244,6 +244,7 @@ func (handler *OrderHandler) UpdateStatus(symbol string, orderType string, clien
 func (handler *OrderHandler) UpdateOrders() {
 	account := ctxt.Accounts.GetAccount(cfg.Exchange, cfg.SwapType)
 	orders := []*common.Order{}
+	buyOrderBookSize, sellOrderBookSize := 0, 0
 
 	// buy orders
 	for symbol, orderBook := range handler.BuyOrders {
@@ -270,6 +271,7 @@ func (handler *OrderHandler) UpdateOrders() {
 
 		tempOrderNum, tmpCreateOrderNum := cfg.MaxOrderNum, 0
 		orderBook.Mutex.RLock()
+		buyOrderBookSize = orderBook.Size()
 		for i := 1; i <= tempOrderNum; i++ {
 			buyPrice := symbolContext.BidPrice - float64(i)*cfg.GapSizeK*dynamicConfig.AdjustedGapSize
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
@@ -282,7 +284,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
 				position.PositionAbs < float64(symbolCfg.MaxContractNum) &&
-				tmpCreateOrderNum < cfg.MaxOrderOneStep {
+				tmpCreateOrderNum <= cfg.MaxOrderOneStep {
 
 				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, float64(symbolCfg.MaxContractNum))
 				logger.Info("===CreateOrder: index: %d, num: %d, bidPrice: %.2f, adjustedDeliveryBuyPrice: %.2f, adjustedSpotBuyPrice: %.2f, adjustedFuturesBuyPrice: %.2f",
@@ -325,6 +327,7 @@ func (handler *OrderHandler) UpdateOrders() {
 
 		tempOrderNum, tmpCreateOrderNum := cfg.MaxOrderNum, 0
 		orderBook.Mutex.RLock()
+		sellOrderBookSize = orderBook.Size()
 		for i := 1; i <= tempOrderNum; i++ {
 			sellPrice := symbolContext.AskPrice + float64(i)*cfg.GapSizeK*dynamicConfig.AdjustedGapSize
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
@@ -355,7 +358,7 @@ func (handler *OrderHandler) UpdateOrders() {
 		orderBook.Mutex.RUnlock()
 	}
 
-	logger.Debug("CreateOrders: %d", len(orders))
+	logger.Info("CreateOrders: %d, buyOrderBookSize: %d, sellOrderBookSize: %d", len(orders), buyOrderBookSize, sellOrderBookSize)
 	handler.PlaceOrders(orders)
 }
 
