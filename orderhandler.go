@@ -281,10 +281,10 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
-				position.PositionAbs < contractNum*float64(symbolCfg.Leverage) &&
+				position.PositionAbs < float64(symbolCfg.MaxContractNum) &&
 				tmpCreateOrderNum < cfg.MaxOrderOneStep {
 
-				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
+				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, float64(symbolCfg.MaxContractNum))
 				logger.Info("===CreateOrder: index: %d, num: %d, bidPrice: %.2f, adjustedDeliveryBuyPrice: %.2f, adjustedSpotBuyPrice: %.2f, adjustedFuturesBuyPrice: %.2f",
 					i, tempOrderNum, symbolContext.BidPrice, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
 				order := common.Order{Symbol: symbol, OrderType: "buy", OrderVolume: contractNum,
@@ -337,9 +337,9 @@ func (handler *OrderHandler) UpdateOrders() {
 
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
-				position.Position > -contractNum*float64(symbolCfg.Leverage) &&
+				position.Position > -float64(symbolCfg.MaxContractNum) &&
 				tmpCreateOrderNum < cfg.MaxOrderOneStep {
-				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, contractNum*float64(symbolCfg.Leverage))
+				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, float64(symbolCfg.MaxContractNum))
 				logger.Info("===CreateOrder: index: %d, num: %d, askPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f",
 					i, tempOrderNum, symbolContext.AskPrice, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
 				order := common.Order{Symbol: symbol, OrderType: "sell", OrderVolume: contractNum,
