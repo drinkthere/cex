@@ -51,7 +51,7 @@ func UpdateDynamicConfig(symbol string, dynamicConfig *DynamicConfig) {
 	if len(dynamicConfig.PriceList) < 300 {
 		dynamicConfig.AdjustedGapSize = gapSize
 		dynamicConfig.AdjustedForgivePercent = forgivePercent
-	} else if len(dynamicConfig.PriceList) < 3000 {
+	} else if len(dynamicConfig.PriceList) <= 3000 {
 		max := common.MaxFloat64(dynamicConfig.PriceList)
 		min := common.MinFloat64(dynamicConfig.PriceList)
 		spread = (max - min) / symbolContext.BidPrice

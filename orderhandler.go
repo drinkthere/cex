@@ -275,7 +275,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的buyPrice
-			logger.Info("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
+			logger.Debug("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
@@ -330,7 +330,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的sellPrice
-			logger.Info("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
+			logger.Debug("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
