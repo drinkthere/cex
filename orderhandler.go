@@ -274,7 +274,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			buyPrice := symbolContext.BidPrice - float64(i)*cfg.GapSizeK*dynamicConfig.AdjustedGapSize
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
 
-			// 根据持仓获得修正后的buyPrice
+			// 根据持仓获得修正后的buyPrice, 根据近期的波动，获得修正好的现货和U本位合约的buyPrice
 			logger.Debug("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
@@ -464,7 +464,7 @@ func (handler *OrderHandler) CancelFarOrders(symbol string) {
 func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 	cancelOrders := []*common.Order{}
 
-	// buy orders
+	// buy orders， 第一个和最后一个订单不做处理
 	orderBook := handler.BuyOrders[symbol]
 	dynamicConfigs := GetDynamicConfig(symbol)
 	size := orderBook.Size()
@@ -473,7 +473,7 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		orderBook.Mutex.RLock()
 
 		cursor := size - 2
-		for i := size - 3; i >= 0; i-- {
+		for i := size - 3; i > 0; i-- {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
 			if prevOrder.OrderPrice-currOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
@@ -486,14 +486,14 @@ func (handler *OrderHandler) CancelCloseDistanceOrders(symbol string) {
 		}
 		orderBook.Mutex.RUnlock()
 	}
-	// sell orders
+	// sell orders， 第一个和最后一个订单不做处理
 	orderBook = handler.SellOrders[symbol]
 	size = orderBook.Size()
 	if size > 2 {
 		orderBook.Sort()
 		orderBook.Mutex.RLock()
 		cursor := 1
-		for i := 2; i < size; i++ {
+		for i := 2; i < size-1; i++ {
 			currOrder := orderBook.Data[i]
 			prevOrder := orderBook.Data[cursor]
 			if currOrder.OrderPrice-prevOrder.OrderPrice < dynamicConfigs.AdjustedGapSize {
