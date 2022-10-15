@@ -58,12 +58,12 @@ func UpdateDynamicConfig(symbol string, dynamicConfig *DynamicConfig) {
 		dynamicConfig.AdjustedGapSize = gapSize + gapSize*spread*cfg.SpreadTimes
 		dynamicConfig.AdjustedForgivePercent = forgivePercent - (math.Pow((spread/cfg.ExponentBaseDenominator), cfg.ExponentPower))/cfg.Denominator
 	}
+	logger.Debug("DynamicConfig Symbol: %s, Spread: %f, AdjustedGapSize: %f, AdjustedForgivePercent: %f, Length: %d",
+		symbol, spread, dynamicConfig.AdjustedGapSize, dynamicConfig.AdjustedForgivePercent,
+		len(dynamicConfig.PriceList))
 
 	if len(dynamicConfig.PriceList) == 3000 {
 		dynamicConfig.PriceList = dynamicConfig.PriceList[1:]
 	}
 
-	logger.Info("DynamicConfig Symbol: %s, Spread: %f, AdjustedGapSize: %f, AdjustedForgivePercent: %f, Length: %d",
-		symbol, spread, dynamicConfig.AdjustedGapSize, dynamicConfig.AdjustedForgivePercent,
-		len(dynamicConfig.PriceList))
 }

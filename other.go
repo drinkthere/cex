@@ -31,12 +31,12 @@ func CheckStatus() {
 				continue
 			}
 			symbolContext.Risk = 3
-			common.SendMessge(ctxt.TelegramBot, cfg.TgChatID, "停止挂单，原因:价格超过1s没有更新")
+			// common.SendMessge(ctxt.TelegramBot, cfg.TgChatID, "停止挂单，原因:价格超过1s没有更新")
 		} else {
 			if symbolContext.Risk == 3 {
 				symbolContext.Risk = 0
 				logger.Warn("%s Price updated, set risk to 0.", symbol)
-				common.SendMessge(ctxt.TelegramBot, cfg.TgChatID, "继续挂单，价格已回复更新")
+				// common.SendMessge(ctxt.TelegramBot, cfg.TgChatID, "继续挂单，价格已回复更新")
 			}
 		}
 	}

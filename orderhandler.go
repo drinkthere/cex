@@ -456,7 +456,7 @@ func (handler *OrderHandler) CancelFarOrders(symbol string) {
 	if len(cancelOrders) > 2 {
 		symbolContext.LastCancelFarTime = timestamp
 	}
-	logger.Info("CancelFarOrders: %+v", cancelOrders)
+	logger.Debug("CancelFarOrders: %+v", cancelOrders)
 	handler.CancelOrdersByClientID(cancelOrders)
 }
 
