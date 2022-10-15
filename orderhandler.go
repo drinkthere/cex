@@ -121,7 +121,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 	}
 	orderBook.Mutex.RUnlock()
 
-	logger.Info("CancelOrders: %d", len(cancelOrders))
+	logger.Debug("CancelOrders: %d", len(cancelOrders))
 	handler.CancelOrdersByClientID(cancelOrders)
 
 	if len(cancelOrders) > 2 {
