@@ -279,10 +279,12 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的buyPrice, 根据近期的波动，获得修正好的现货和U本位合约的buyPrice
-			logger.Info("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
+
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
+			logger.Info("buyPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliveryBuyPrice: %f, adjustedSpotBuyPrice: %f, adjustedFuturesBuyPrice: %f",
+				buyPrice, ratio, position.Position, inRange, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
 				position.PositionAbs < float64(symbolCfg.MaxContractNum) &&
@@ -335,11 +337,11 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的sellPrice
-			logger.Info("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
-
+			logger.Info("sellPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliverySellPrice: %f, adjustedSpotSellPrice: %f, adjustedFuturesSellPrice: %f",
+				sellPrice, ratio, position.Position, inRange, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
 				position.Position > -float64(symbolCfg.MaxContractNum) &&
