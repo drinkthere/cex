@@ -48,10 +48,10 @@ func (handler *OrderHandler) Init(cfg *config.Config) {
 func (handler *OrderHandler) CancelOrders(symbol string) {
 	timestamp := common.GetTimestampInMS()
 	symbolContext := ctxt.GetSymbolContext(symbol)
-	// 每200ms取消2次
-	if symbolContext == nil || timestamp-symbolContext.LastCancelTime < 200 {
-		return
-	}
+	//// 每200ms取消2次
+	//if symbolContext == nil || timestamp-symbolContext.LastCancelTime < 200 {
+	//	return
+	//}
 
 	cancelOrders := []*common.Order{}
 
@@ -122,9 +122,11 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 	orderBook.Mutex.RUnlock()
 
 	logger.Debug("CancelOrders: %d", len(cancelOrders))
-	handler.CancelOrdersByClientID(cancelOrders)
+	//handler.CancelOrdersByClientID(cancelOrders)
+	// 改成cancelAll
+	handler.CancelAllOrdersWithSymbol(symbol)
 
-	if len(cancelOrders) > 2 {
+	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelTime = timestamp
 	}
 }
