@@ -343,7 +343,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
 				position.Position > -float64(symbolCfg.MaxContractNum) &&
-				tmpCreateOrderNum < cfg.MaxOrderOneStep {
+				tmpCreateOrderNum <= cfg.MaxOrderOneStep {
 				logger.Info("===position: %.2f, maxPosition: %.2f", position.Position, float64(symbolCfg.MaxContractNum))
 				logger.Info("===CreateOrder: index: %d, num: %d, askPrice: %.2f, adjustedDeliverySellPrice: %.2f, adjustedSpotSellPrice: %.2f, adjustedFuturesSellPrice: %.2f",
 					i, tempOrderNum, symbolContext.AskPrice, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
