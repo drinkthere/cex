@@ -65,6 +65,7 @@ type Config struct {
 	MinAccuracy        float64 // 价格最小精度
 	Commission         float64 // 手续费返点
 	Loss               float64 // 让利亏损
+	CancelShift        float64 // 取消订单的价格系数
 }
 
 func LoadConfig(filename string) *Config {

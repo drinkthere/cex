@@ -77,14 +77,14 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 判断如果当前币本位bid价格和现货的ask价格的价差，如果手续费返点cover不住，就取消。
 		// 加一个系数K，当仓位过高时，可以接受亏一些出货
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
-		lossRatio := (spotPriceItem.BidPrice - symbolContext.AskPrice) / symbolContext.AskPrice
+		profitRatio := (spotPriceItem.BidPrice - symbolContext.AskPrice) / symbolContext.AskPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
-		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
+		threashodl := -(cfg.Commission + cfg.CancelShift*positionRatio - cfg.Loss)
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
-		if lossRatio > threashodl {
+		if profitRatio < threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
-				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, lossRatio, threashodl, positionRatio)
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, profitRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
+				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, profitRatio, threashodl, positionRatio)
 		}
 	}
 	orderBook.Mutex.RUnlock()
@@ -109,14 +109,14 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 判断如果当前币本位ask价格和现货的bid价格的价差，如果手续费返点cover不住，就取消。
 		// 加一个系数K，当仓位过高时，可以接受亏一些出货
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
-		lossRatio := (spotPriceItem.AskPrice - symbolContext.BidPrice) / symbolContext.BidPrice
+		profitRatio := (symbolContext.BidPrice - spotPriceItem.AskPrice) / symbolContext.BidPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
-		threashodl := -(cfg.Commission + cfg.Loss) * positionRatio
+		threashodl := -(cfg.Commission + cfg.CancelShift*positionRatio - cfg.Loss)
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
-		if lossRatio > threashodl {
+		if profitRatio < threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, bidPrice: %.2f, orderPrice: %.2f, spotAskPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
-				i, symbolContext.BidPrice, order.OrderPrice, spotPriceItem.AskPrice, lossRatio, threashodl, positionRatio)
+			logger.Info("===CancelOrder: index: %d, bidPrice: %.2f, orderPrice: %.2f, spotAskPrice: %.2f, lossRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
+				i, symbolContext.BidPrice, order.OrderPrice, spotPriceItem.AskPrice, profitRatio, threashodl, positionRatio)
 		}
 	}
 	orderBook.Mutex.RUnlock()
@@ -337,7 +337,7 @@ func (handler *OrderHandler) UpdateOrders() {
 		tempOrderNum, tmpCreateOrderNum := cfg.MaxOrderNum, 0
 		orderBook.Mutex.RLock()
 		sellOrderBookSize = orderBook.Size()
-		for i := 0; i < tempOrderNum; i++ {
+		for i := 1; i <= tempOrderNum; i++ {
 			sellPrice := symbolContext.AskPrice + float64(i)*cfg.GapSizeK*dynamicConfig.AdjustedGapSize
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
