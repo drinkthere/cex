@@ -283,8 +283,13 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
-			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliveryBuyPrice: %f, adjustedSpotBuyPrice: %f, adjustedFuturesBuyPrice: %f",
-				i, buyPrice, ratio, position.Position, inRange, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
+			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
+				i, buyPrice, ratio, position.Position,
+				!inRange,
+				adjustedDeliveryBuyPrice < adjustedSpotBuyPrice,
+				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice,
+				position.PositionAbs < float64(symbolCfg.MaxContractNum),
+				tmpCreateOrderNum <= cfg.MaxOrderOneStep)
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
 				position.PositionAbs < float64(symbolCfg.MaxContractNum) &&
@@ -340,6 +345,14 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
+			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
+				i, sellPrice, ratio, position.Position,
+				!inRange,
+				adjustedDeliverySellPrice > adjustedSpotSellPrice,
+				adjustedDeliverySellPrice > adjustedFuturesSellPrice,
+				position.Position > -float64(symbolCfg.MaxContractNum),
+				tmpCreateOrderNum <= cfg.MaxOrderOneStep)
+
 			logger.Info("index: %d, sellPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliverySellPrice: %f, adjustedSpotSellPrice: %f, adjustedFuturesSellPrice: %f",
 				i, sellPrice, ratio, position.Position, inRange, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
