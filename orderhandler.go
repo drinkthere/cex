@@ -124,9 +124,8 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 	logger.Debug("CancelOrders: %d", len(cancelOrders))
 	//handler.CancelOrdersByClientID(cancelOrders)
 	// 改成cancelAll
-	handler.CancelAllOrdersWithSymbol(symbol)
-
 	if len(cancelOrders) > 0 {
+		handler.CancelAllOrdersWithSymbol(symbol)
 		symbolContext.LastCancelTime = timestamp
 	}
 }
