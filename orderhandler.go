@@ -68,7 +68,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
 		gapSize := symbolContext.BidPrice - order.OrderPrice
-		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+		logger.Debug("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
 			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
@@ -79,7 +79,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
 		profitRatio := (spotPriceItem.BidPrice - symbolContext.AskPrice) / symbolContext.AskPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
-		threashodl := -(cfg.Commission + cfg.CancelShift*positionRatio - cfg.Loss)
+		threashodl := cfg.Commission - cfg.CancelShift*positionRatio - cfg.Loss
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
 		if profitRatio < threashodl {
 			cancelOrders = append(cancelOrders, order)
@@ -111,7 +111,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
 		profitRatio := (symbolContext.BidPrice - spotPriceItem.AskPrice) / symbolContext.BidPrice
 		positionRatio := position.PositionAbs / float64(cfg.SymbolConfigs[symbol].MaxContractNum)
-		threashodl := -(cfg.Commission + cfg.CancelShift*positionRatio - cfg.Loss)
+		threashodl := cfg.Commission - cfg.CancelShift*positionRatio - cfg.Loss
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
 		if profitRatio < threashodl {
 			cancelOrders = append(cancelOrders, order)
