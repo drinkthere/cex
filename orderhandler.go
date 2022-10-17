@@ -166,7 +166,7 @@ func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
 func (handler *OrderHandler) CancelAllOrdersWithSymbol(symbol string) bool {
 	buyOrderBook := handler.BuyOrders[symbol]
 	sellOrderBook := handler.SellOrders[symbol]
-	logger.Info("CancelAllOrders %s buy order size: %d, sell order size: %d", symbol,
+	logger.Debug("CancelAllOrders %s buy order size: %d, sell order size: %d", symbol,
 		buyOrderBook.Size(), sellOrderBook.Size())
 
 	if len(buyOrderBook.Data) > 0 || len(sellOrderBook.Data) > 0 {
@@ -279,7 +279,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, buyPrice, "buy", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的buyPrice, 根据近期的波动，获得修正好的现货和U本位合约的buyPrice
-			logger.Debug("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
+			logger.Info("buyPrice: %.2f, ratio: %f, position: %f", buyPrice, ratio, position.Position)
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
@@ -335,7 +335,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
 			// 根据持仓获得修正后的sellPrice
-			logger.Debug("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
+			logger.Info("sellPrice: %.2f, ratio: %f, position: %f", sellPrice, ratio, position.Position)
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
