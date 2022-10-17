@@ -48,10 +48,10 @@ func (handler *OrderHandler) Init(cfg *config.Config) {
 func (handler *OrderHandler) CancelOrders(symbol string) {
 	timestamp := common.GetTimestampInMS()
 	symbolContext := ctxt.GetSymbolContext(symbol)
-	//// 每200ms取消2次
-	//if symbolContext == nil || timestamp-symbolContext.LastCancelTime < 200 {
-	//	return
-	//}
+	// 每200ms取消2次
+	if symbolContext == nil || timestamp-symbolContext.LastCancelTime < 200 {
+		return
+	}
 
 	cancelOrders := []*common.Order{}
 
@@ -68,7 +68,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		}
 		// 如果订单价格离盘口的距离比较远，暂时不考虑取消
 		gapSize := symbolContext.BidPrice - order.OrderPrice
-		logger.Debug("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
+		logger.Info("===orderPrice:%.2f, deliveryBidPrice:%.2f, gap: %.6f, gapSize>AdjustedGapSize: %b ",
 			order.OrderPrice, symbolContext.BidPrice, gapSize, gapSize > dynamicConfig.AdjustedGapSize)
 		if gapSize > dynamicConfig.AdjustedGapSize {
 			continue
@@ -83,7 +83,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		// 最多能接受亏掉补偿手续费在家个让利回吐仓位
 		if lossRatio > threashodl {
 			cancelOrders = append(cancelOrders, order)
-			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.2f, positionRatio: %.2f",
+			logger.Info("===CancelOrder: index: %d, askPrice: %.2f, orderPrice: %.2f, spotBidPrice: %.2f, diffRatio: %.6f, threashold: %.6f, positionRatio: %.2f",
 				i, symbolContext.AskPrice, order.OrderPrice, spotPriceItem.BidPrice, lossRatio, threashodl, positionRatio)
 		}
 	}
@@ -283,7 +283,7 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
-			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
+			logger.Debug("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
 				i, buyPrice, ratio, position.Position,
 				!inRange,
 				adjustedDeliveryBuyPrice < adjustedSpotBuyPrice,
@@ -345,16 +345,13 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
-			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
+			logger.Debug("index: %d, buyPrice: %.2f, ratio: %f, position: %f, condition: %s|%s|%s|%s|%s",
 				i, sellPrice, ratio, position.Position,
 				!inRange,
 				adjustedDeliverySellPrice > adjustedSpotSellPrice,
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice,
 				position.Position > -float64(symbolCfg.MaxContractNum),
 				tmpCreateOrderNum <= cfg.MaxOrderOneStep)
-
-			logger.Info("index: %d, sellPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliverySellPrice: %f, adjustedSpotSellPrice: %f, adjustedFuturesSellPrice: %f",
-				i, sellPrice, ratio, position.Position, inRange, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
 				position.Position > -float64(symbolCfg.MaxContractNum) &&
