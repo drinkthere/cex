@@ -283,8 +283,8 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliveryBuyPrice := getAdjustedPrice(buyPrice, ratio, position.Position)
 			adjustedSpotBuyPrice := spotPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesBuyPrice := futuresPriceItem.BidPrice * dynamicConfig.AdjustedForgivePercent
-			logger.Info("buyPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliveryBuyPrice: %f, adjustedSpotBuyPrice: %f, adjustedFuturesBuyPrice: %f",
-				buyPrice, ratio, position.Position, inRange, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
+			logger.Info("index: %d, buyPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliveryBuyPrice: %f, adjustedSpotBuyPrice: %f, adjustedFuturesBuyPrice: %f",
+				i, buyPrice, ratio, position.Position, inRange, adjustedDeliveryBuyPrice, adjustedSpotBuyPrice, adjustedFuturesBuyPrice)
 			if !inRange && adjustedDeliveryBuyPrice < adjustedSpotBuyPrice &&
 				adjustedDeliveryBuyPrice < adjustedFuturesBuyPrice &&
 				position.PositionAbs < float64(symbolCfg.MaxContractNum) &&
@@ -332,7 +332,7 @@ func (handler *OrderHandler) UpdateOrders() {
 		tempOrderNum, tmpCreateOrderNum := cfg.MaxOrderNum, 0
 		orderBook.Mutex.RLock()
 		sellOrderBookSize = orderBook.Size()
-		for i := 1; i <= tempOrderNum; i++ {
+		for i := 0; i < tempOrderNum; i++ {
 			sellPrice := symbolContext.AskPrice + float64(i)*cfg.GapSizeK*dynamicConfig.AdjustedGapSize
 			inRange := handler.IsInRange(i, sellPrice, "sell", orderBook, dynamicConfig)
 
@@ -340,8 +340,8 @@ func (handler *OrderHandler) UpdateOrders() {
 			adjustedDeliverySellPrice := getAdjustedPrice(sellPrice, ratio, position.Position)
 			adjustedSpotSellPrice := spotPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
 			adjustedFuturesSellPrice := futuresPriceItem.BidPrice / dynamicConfig.AdjustedForgivePercent
-			logger.Info("sellPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliverySellPrice: %f, adjustedSpotSellPrice: %f, adjustedFuturesSellPrice: %f",
-				sellPrice, ratio, position.Position, inRange, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
+			logger.Info("index: %d, sellPrice: %.2f, ratio: %f, position: %f, inRange: %b, adjustedDeliverySellPrice: %f, adjustedSpotSellPrice: %f, adjustedFuturesSellPrice: %f",
+				i, sellPrice, ratio, position.Position, inRange, adjustedDeliverySellPrice, adjustedSpotSellPrice, adjustedFuturesSellPrice)
 			if !inRange && adjustedDeliverySellPrice > adjustedSpotSellPrice &&
 				adjustedDeliverySellPrice > adjustedFuturesSellPrice &&
 				position.Position > -float64(symbolCfg.MaxContractNum) &&
