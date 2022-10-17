@@ -43,11 +43,11 @@ func Start() {
 	// 每1s更新一遍订单
 	go common.Timer(1*time.Second, UpdateOrders)
 
-	//// 每3秒钟取消距离较远的订单
-	//go common.Timer(3*time.Second, CancelFarOrders)
-	//
-	//// 每3s取消一次间距较近的订单
-	//go common.Timer(3*time.Second, CancelCloseDistanceOrders)
+	// 每3秒钟取消距离较远的订单
+	go common.Timer(3*time.Second, CancelFarOrders)
+
+	// 每3s取消一次间距较近的订单
+	go common.Timer(3*time.Second, CancelCloseDistanceOrders)
 
 	// 每分钟更新一次账户状态
 	go common.Timer(60*time.Second, UpdateAccount)
