@@ -123,3 +123,9 @@ func IsSettlement(timeStamp int64) bool {
 	}
 	return false
 }
+
+// 测速
+func TimeCost(start time.Time) time.Duration {
+	tc := time.Since(start)
+	return tc
+}

@@ -21,6 +21,10 @@ build: fmt vet lint
 	go mod vendor
 	go build -o bin/dmmspot ./*.go
 
+build-perf: fmt vet lint
+	go mod vendor
+	go build -o bin/perf ./performance/*.go
+
 fmt:
 	go fmt ./...
 
