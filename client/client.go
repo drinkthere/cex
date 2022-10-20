@@ -87,3 +87,45 @@ type WSClient interface {
 	// 停止webscoket
 	StopWS() bool
 }
+
+func processOneStepDepthBinance(prices []DepthPriceItem, updateItem DepthPriceItem,
+	priceType string) []DepthPriceItem {
+	size := len(prices)
+	if size == 0 && updateItem.Price.IsPositive() && !updateItem.Volume.IsZero() {
+		prices = append(prices, updateItem)
+		return prices
+	}
+	for i := 0; i < size; i++ {
+		item := prices[i]
+		// 价格相同替换原有数量
+		if item.Price.Equal(updateItem.Price) {
+			// 数量为0，删除该档位价格
+			if updateItem.Volume.IsZero() {
+				prices = append(prices[:i], prices[i+1:]...)
+			} else if updateItem.LastUpdateID > item.LastUpdateID {
+				item.Volume = updateItem.Volume
+			}
+			break
+		} else if (priceType == "bid" && updateItem.Price.Cmp(item.Price) > 0) ||
+			(priceType == "ask" && updateItem.Price.Cmp(item.Price) < 0) {
+			if updateItem.Volume.IsZero() {
+				break
+			}
+			var tmp []DepthPriceItem
+			if i > 0 {
+				tmp = append(tmp, prices[:i]...)
+			}
+			tmp = append(tmp, updateItem)
+			prices = append(tmp, prices[i:]...)
+			break
+		} else if i == size-1 {
+			if updateItem.Volume.IsZero() {
+				break
+			}
+			// 添加到最后
+			prices = append(prices, updateItem)
+			break
+		}
+	}
+	return prices
+}

@@ -35,6 +35,7 @@ func (handler *EventHandler) Init(cfg *config.Config, orderHandler OrderHandler)
 	binanceConfig.Symbols = futuresSymbols
 	binanceFuturesWSClient := new(client.BinanceFuturesWSClient)
 	binanceFuturesWSClient.Init(binanceConfig)
+	binanceFuturesWSClient.SetHttpClient(orderHandler.BinanceFuturesOrderClient)
 	binanceFuturesWSClient.SetPriceHandler(FuturesPriceHandler, common.CommonErrorHandler)
 	handler.wsClient = append(handler.wsClient, binanceFuturesWSClient)
 
@@ -78,6 +79,24 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 
 		if askPrice > config.MinAccuracy {
 			logger.Info("deliveryBookTicker|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
+	} else if resp.MsgType == "deliveryDepth" {
+		bidPrice, askPrice := 0.0, 0.0
+		for _, item := range resp.Bids {
+			bidPrice, _ = item.Price.Float64()
+		}
+		for _, item := range resp.Asks {
+			askPrice, _ = item.Price.Float64()
+		}
+
+		if bidPrice > config.MinAccuracy {
+			logger.Info("deliveryDepth|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
+
+		if askPrice > config.MinAccuracy {
+			logger.Info("deliveryDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}
@@ -182,6 +201,24 @@ func FuturesPriceHandler(resp *client.PriceWSResponse) {
 			logger.Info("futuresBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
+	} else if resp.MsgType == "futuresDepth" {
+		bidPrice, askPrice := 0.0, 0.0
+		for _, item := range resp.Bids {
+			bidPrice, _ = item.Price.Float64()
+		}
+		for _, item := range resp.Asks {
+			askPrice, _ = item.Price.Float64()
+		}
+
+		if bidPrice > config.MinAccuracy {
+			logger.Info("futuresDepth|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
+
+		if askPrice > config.MinAccuracy {
+			logger.Info("futuresDepth|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
 	}
 }
 
@@ -206,6 +243,24 @@ func SpotPriceHandler(resp *client.PriceWSResponse) {
 
 		if askPrice > config.MinAccuracy {
 			logger.Info("spotBookTicker|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
+	} else if resp.MsgType == "spotDepth" {
+		bidPrice, askPrice := 0.0, 0.0
+		for _, item := range resp.Bids {
+			bidPrice, _ = item.Price.Float64()
+		}
+		for _, item := range resp.Asks {
+			askPrice, _ = item.Price.Float64()
+		}
+
+		if bidPrice > config.MinAccuracy {
+			logger.Info("spotDepth|%d|%d|%d",
+				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
+		}
+
+		if askPrice > config.MinAccuracy {
+			logger.Info("spotDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}

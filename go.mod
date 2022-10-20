@@ -24,4 +24,4 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 )
 
-replace github.com/adshao/go-binance/v2 v2.3.9 => github.com/drinkthere/go-binance/v2 v2.3.5-0.20221014063512-fe67fe05a09b
+replace github.com/adshao/go-binance/v2 v2.3.9 => github.com/drinkthere/go-binance/v2 v2.3.5-0.20221020071838-15c2217cdb92
