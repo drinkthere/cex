@@ -37,12 +37,14 @@ func (handler *EventHandler) Init(cfg *config.Config, orderHandler OrderHandler)
 	binanceFuturesWSClient := new(client.BinanceFuturesWSClient)
 	binanceFuturesWSClient.Init(binanceConfig)
 	binanceFuturesWSClient.SetPriceHandler(FuturesPriceHandler, common.CommonErrorHandler)
+	binanceFuturesWSClient.SetHttpClient(orderHandler.BinanceFuturesOrderClient)
 	handler.wsClient = append(handler.wsClient, binanceFuturesWSClient)
 
 	// 初始化币安现货的 WS client
 	binanceSpotWSClient := new(client.BinanceSpotWSClient)
 	binanceSpotWSClient.Init(binanceConfig)
 	binanceSpotWSClient.SetPriceHandler(SpotPriceHandler, common.CommonErrorHandler)
+	binanceSpotWSClient.SetHttpClient(orderHandler.BinanceSpotOrderClient)
 	handler.wsClient = append(handler.wsClient, binanceSpotWSClient)
 }
 

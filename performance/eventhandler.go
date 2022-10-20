@@ -24,7 +24,7 @@ func (handler *EventHandler) Init(cfg *config.Config, orderHandler OrderHandler)
 	binanceDeliveryWSClient.Init(binanceConfig)
 	binanceDeliveryWSClient.SetHttpClient(orderHandler.BinanceDeliveryOrderClient)
 	binanceDeliveryWSClient.SetPriceHandler(DeliveryPriceWSHandler, common.CommonErrorHandler)
-	//binanceDeliveryWSClient.SetOrderHandler(DeliveryOrderWSHandler)
+	//	binanceDeliveryWSClient.SetOrderHandler(DeliveryOrderWSHandler)
 	handler.wsClient = append(handler.wsClient, binanceDeliveryWSClient)
 
 	// 初始化币安的U本位 WS client
@@ -35,14 +35,15 @@ func (handler *EventHandler) Init(cfg *config.Config, orderHandler OrderHandler)
 	binanceConfig.Symbols = futuresSymbols
 	binanceFuturesWSClient := new(client.BinanceFuturesWSClient)
 	binanceFuturesWSClient.Init(binanceConfig)
-	binanceFuturesWSClient.SetHttpClient(orderHandler.BinanceFuturesOrderClient)
 	binanceFuturesWSClient.SetPriceHandler(FuturesPriceHandler, common.CommonErrorHandler)
+	binanceFuturesWSClient.SetHttpClient(orderHandler.BinanceFuturesOrderClient)
 	handler.wsClient = append(handler.wsClient, binanceFuturesWSClient)
 
 	// 初始化币安现货的 WS client
 	binanceSpotWSClient := new(client.BinanceSpotWSClient)
 	binanceSpotWSClient.Init(binanceConfig)
 	binanceSpotWSClient.SetPriceHandler(SpotPriceHandler, common.CommonErrorHandler)
+	binanceSpotWSClient.SetHttpClient(orderHandler.BinanceSpotOrderClient)
 	handler.wsClient = append(handler.wsClient, binanceSpotWSClient)
 }
 

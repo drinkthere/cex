@@ -239,7 +239,7 @@ func (cli *BinanceSpotWSClient) depthWSConnect(symbol string) bool {
 		logger.Error("failed to establish connection with spot depth websocket, message is %s", err.Error())
 		return false
 	}
-	logger.Info("spot depth WS is established")
+	logger.Info("Binance spot depth WS is established, symbol=%s", symbol)
 	cli.depthStopC = append(cli.depthStopC, stopC)
 
 	// 获取全量数据
