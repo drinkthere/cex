@@ -146,9 +146,6 @@ func (cli *BinanceSpotWSClient) bookTickerWSConnect(symbol string) bool {
 	}
 	logger.Info("Binance spot bookTicker WS is established, symbol=%s", symbol)
 	cli.bookTickerStopC = append(cli.bookTickerStopC, stopC)
-
-	// 获取全量数据
-	cli.getSpotDepthPrice(symbol)
 	return true
 }
 
