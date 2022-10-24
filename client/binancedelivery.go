@@ -112,6 +112,7 @@ func (cli *BinanceDeliveryClient) GetDepthPriceInfo(symbol string) (*delivery.De
 // 创建订单，如果成功返回orderID，否则返回空
 // 限价单，GTC
 func (cli *BinanceDeliveryClient) PlaceOrderGTX(order *common.Order) string {
+	defer common.TimeCost(time.Now(), "placeLimitOrder")
 	if !cli.checkLimit(1) {
 		return ""
 	}

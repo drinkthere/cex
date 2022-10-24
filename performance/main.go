@@ -30,6 +30,11 @@ func Start() {
 
 	// 确保 ws 正常启动和监听
 	time.Sleep(5 * time.Second)
+
+	go common.Timer(1*time.Second, UpdateOrders)
+
+	// 每3秒钟取消距离较远的订单
+	go common.Timer(3*time.Second, CancelOrders)
 }
 func ExitProcess() {
 	// 取消所有订单, 不判断本地orders

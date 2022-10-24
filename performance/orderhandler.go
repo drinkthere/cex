@@ -3,7 +3,6 @@ package main
 import (
 	"cex/client"
 	"cex/common"
-	"cex/common/logger"
 	"cex/config"
 	"time"
 )
@@ -46,6 +45,7 @@ func (handler *OrderHandler) Init(cfg *config.Config) {
 
 // 取消订单（必须相同交易对）
 func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
+	defer common.TimeCost(time.Now(), "cancelByClientId")
 	clientOrderIDs := []string{}
 	clientOrderIDMap := make(map[string]*common.Order)
 	for _, order := range orders {
@@ -172,6 +172,7 @@ func (handler *OrderHandler) PlaceOrder(order *common.Order) {
 	orderBook.Add(order)
 
 	// parse symbol
+
 	orderID := handler.BinanceDeliveryOrderClient.PlaceOrderGTX(order)
 	if orderID != "" {
 		order.OrderID = orderID
@@ -185,12 +186,42 @@ func (handler *OrderHandler) PlaceOrder(order *common.Order) {
 	}
 }
 
-// 取消距离较远的订单
-func (handler *OrderHandler) CancelFarOrders(symbol string) {
-	timestamp := common.GetTimestampInMS()
-	// 每2s取消2次
+func (handler *OrderHandler) UpdateOrders() {
+	orders := []*common.Order{}
+	symbol := "BTCUSD_PERP"
+	symbolCfg := cfg.SymbolConfigs[symbol]
+	contractNum := float64(symbolCfg.ContractNum)
 	symbolContext := ctxt.GetSymbolContext(symbol)
-	if symbolContext == nil || timestamp-symbolContext.LastCancelFarTime < 2000 {
+	spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
+	futuresPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "futures")
+
+	if symbolContext.Risk != 0 || symbol == "BNBUSD_PERP" {
+		return
+	}
+
+	if spotPriceItem == nil || futuresPriceItem == nil || symbolContext.BidPrice < cfg.MinAccuracy {
+		return
+	}
+
+	orderBook := handler.BuyOrders[symbol]
+	orderBook.Mutex.RLock()
+	buyOrderBookSize := orderBook.Size()
+	if buyOrderBookSize < 1 {
+		buyPrice := symbolContext.BidPrice - 100
+		order := common.Order{Symbol: symbol, OrderType: "buy", OrderVolume: contractNum,
+			OrderPrice: buyPrice}
+		orders = append(orders, &order)
+	}
+	orderBook.Mutex.RUnlock()
+	handler.PlaceOrders(orders)
+}
+
+// 取消距离较远的订单
+func (handler *OrderHandler) CancelOrders(symbol string) {
+	timestamp := common.GetTimestampInMS()
+	// 每5s取消2次
+	symbolContext := ctxt.GetSymbolContext(symbol)
+	if symbolContext == nil || timestamp-symbolContext.LastCancelFarTime < 5000 {
 		return
 	}
 
@@ -198,33 +229,26 @@ func (handler *OrderHandler) CancelFarOrders(symbol string) {
 
 	// buy orders
 	orderBook := handler.BuyOrders[symbol]
-	size := orderBook.Size() - cfg.MaxOrderNum
-	if size > 0 {
-		orderBook.Sort()
-
-		orderBook.Mutex.RLock()
-		for i := 0; i < size; i++ {
-			cancelOrders = append(cancelOrders, orderBook.Data[i])
-		}
-		orderBook.Mutex.RUnlock()
+	orderBook.Mutex.RLock()
+	size := orderBook.Size()
+	for i := 0; i < size; i++ {
+		cancelOrders = append(cancelOrders, orderBook.Data[i])
 	}
-
-	// sell orders
-	orderBook = handler.SellOrders[symbol]
-	size = orderBook.Size() - cfg.MaxOrderNum
-	if size > 0 {
-		orderBook.Sort()
-
-		orderBook.Mutex.RLock()
-		for i := orderBook.Size() - 1; orderBook.Size()-i <= size; i-- {
-			cancelOrders = append(cancelOrders, orderBook.Data[i])
-		}
-		orderBook.Mutex.RUnlock()
-	}
-
-	if len(cancelOrders) > 2 {
+	orderBook.Mutex.RUnlock()
+	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelFarTime = timestamp
+		handler.CancelOrdersByClientID(cancelOrders)
 	}
-	logger.Debug("CancelFarOrders: %+v", cancelOrders)
-	handler.CancelOrdersByClientID(cancelOrders)
+}
+
+// 更新订单
+func UpdateOrders() {
+	orderHandler.UpdateOrders()
+}
+
+// 取消距离较远的订单
+func CancelOrders() {
+	for _, symbol := range ctxt.Symbols {
+		orderHandler.CancelOrders(symbol)
+	}
 }

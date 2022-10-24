@@ -1,6 +1,7 @@
 package common
 
 import (
+	"cex/common/logger"
 	"fmt"
 	"os"
 	"os/signal"
@@ -125,7 +126,7 @@ func IsSettlement(timeStamp int64) bool {
 }
 
 // 测速
-func TimeCost(start time.Time) time.Duration {
+func TimeCost(start time.Time, remark string) {
 	tc := time.Since(start)
-	return tc
+	logger.Info("%s|%d", remark, tc.Nanoseconds())
 }
