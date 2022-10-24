@@ -5,6 +5,7 @@ import (
 	"cex/common"
 	"cex/common/logger"
 	"cex/config"
+	"strconv"
 	"time"
 )
 
@@ -79,11 +80,12 @@ func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
 
 // 取消订单（必须相同交易对）
 func (handler *OrderHandler) CancelOrdersByOrderID(orders []*common.Order) {
-	orderIDs := []string{}
-	orderIDMap := make(map[string]*common.Order)
+	orderIDs := []int64{}
+	orderIDMap := make(map[int64]*common.Order)
 	for _, order := range orders {
-		orderIDs = append(orderIDs, order.OrderID)
-		orderIDMap[order.OrderID] = order
+		orderID, _ := strconv.ParseInt(order.OrderID, 10, 64)
+		orderIDs = append(orderIDs, orderID)
+		orderIDMap[orderID] = order
 	}
 
 	size := len(orderIDs)
@@ -99,7 +101,7 @@ func (handler *OrderHandler) CancelOrdersByOrderID(orders []*common.Order) {
 			end = size
 		}
 		lst := orderIDs[i:end]
-		successIDs, _ := handler.BinanceDeliveryOrderClient.CancelOrdersByClientID(&lst, symbol)
+		successIDs, _ := handler.BinanceDeliveryOrderClient.CancelOrdersByOrderID(&lst, symbol)
 		for _, id := range successIDs {
 			_, ok := orderIDMap[id]
 			if ok {

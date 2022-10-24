@@ -205,6 +205,24 @@ func (cli *BinanceDeliveryClient) CancelOrdersByClientID(clientOrderIDs *[]strin
 	return canceledIds, nil
 }
 
+func (cli *BinanceDeliveryClient) CancelOrdersByOrderID(orderIDs *[]int64, symbol string) ([]int64, error) {
+	orderNum := len(*orderIDs)
+	canceledIds := make([]int64, orderNum)
+
+	resp, err := cli.orderClient.NewCancelMultiplesOrdersService().
+		Symbol(symbol).
+		OrderIDList(*orderIDs).Do(context.Background())
+	if err != nil {
+		logger.Error(err.Error())
+		return canceledIds, err
+	}
+
+	for _, order := range resp {
+		canceledIds = append(canceledIds, order.OrderID)
+	}
+	return canceledIds, nil
+}
+
 // --------------------------------------以下是websocket
 
 type BinanceDeliveryWSClient struct {
