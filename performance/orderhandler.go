@@ -227,7 +227,6 @@ func (handler *OrderHandler) UpdateOrders() {
 	symbolContext := ctxt.GetSymbolContext(symbol)
 	spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
 	futuresPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "futures")
-	logger.Info("%v|%v", symbolContext.BidPrice, cfg.MinAccuracy)
 	if symbolContext.Risk != 0 || symbol == "BNBUSD_PERP" {
 		return
 	}
@@ -249,7 +248,6 @@ func (handler *OrderHandler) UpdateOrders() {
 	handler.PlaceOrders(orders)
 }
 
-// 取消距离较远的订单
 func (handler *OrderHandler) CancelOrders(symbol string) {
 	timestamp := common.GetTimestampInMS()
 	// 每5s取消2次
@@ -268,6 +266,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		cancelOrders = append(cancelOrders, orderBook.Data[i])
 	}
 	orderBook.Mutex.RUnlock()
+	logger.Info("cancelOrders:%v", cancelOrders)
 	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelFarTime = timestamp
 		// handler.CancelOrdersByClientID(cancelOrders)
