@@ -80,6 +80,7 @@ func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
 
 // 取消订单（必须相同交易对）
 func (handler *OrderHandler) CancelOrdersByOrderID(orders []*common.Order) {
+	defer common.TimeCost(time.Now(), "cancelByOrderId")
 	orderIDs := []int64{}
 	orderIDMap := make(map[int64]*common.Order)
 	for _, order := range orders {
