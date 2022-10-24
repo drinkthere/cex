@@ -273,7 +273,8 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelFarTime = timestamp
 		// handler.CancelOrdersByClientID(cancelOrders)
-		handler.CancelOrdersByOrderID(cancelOrders)
+		// handler.CancelOrdersByOrderID(cancelOrders)
+		handler.CancelAllOrdersWithSymbol(symbol)
 	}
 }
 

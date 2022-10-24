@@ -179,6 +179,7 @@ func (cli *BinanceDeliveryClient) checkLimit(n int) bool {
 
 // 取消所有订单
 func (cli *BinanceDeliveryClient) CancelAllOrders(symbol string) bool {
+	defer common.TimeCost(time.Now(), "cancelByAll")
 	err := cli.orderClient.NewCancelAllOpenOrdersService().Symbol(strings.ToUpper(symbol)).Do(context.Background())
 	if err != nil {
 		logger.Error(err.Error())
