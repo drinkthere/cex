@@ -269,7 +269,7 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 		cancelOrders = append(cancelOrders, orderBook.Data[i])
 	}
 	orderBook.Mutex.RUnlock()
-	logger.Info("cancelOrders:%v", cancelOrders)
+	logger.Debug("cancelOrders:%v", cancelOrders)
 	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelFarTime = timestamp
 		// handler.CancelOrdersByClientID(cancelOrders)
