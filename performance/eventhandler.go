@@ -5,7 +5,6 @@ import (
 	"cex/common"
 	"cex/common/logger"
 	"cex/config"
-	"math"
 )
 
 type EventHandler struct {
@@ -84,10 +83,7 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 				askVolume = item.Volume
 			}
 		}
-
-		buyDelta, sellDelta := 0.0, 0.0
 		if bidPrice > config.MinAccuracy {
-			buyDelta = math.Abs(bidPrice-symbolContext.BidPrice) / bidPrice
 			symbolContext.BidPrice = bidPrice
 			symbolContext.BidVolume = bidVolume
 			logger.Debug("binance delivery %s buy price is %f, quantity is %f at %d",
@@ -97,7 +93,6 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 		}
 
 		if askPrice > config.MinAccuracy {
-			sellDelta = math.Abs(askPrice-symbolContext.AskPrice) / askPrice
 			symbolContext.AskPrice = askPrice
 			symbolContext.AskVolume = askVolume
 			logger.Debug("binance delivery %s sell price is %f, quantity is %f at %d",
@@ -110,10 +105,6 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 		}
 
 		logger.Debug("binance delivery bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
-		// 价格变化大于一定比例才触发更新orders
-		if buyDelta > config.MinDeltaRate || sellDelta > config.MinDeltaRate {
-			go orderHandler.CancelOrders(symbol)
-		}
 	} else if resp.MsgType == "deliveryDepth" {
 		// 暂时只统计了时间，没有用到depth的Price
 		bidPrice, askPrice := 0.0, 0.0

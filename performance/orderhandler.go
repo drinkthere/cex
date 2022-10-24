@@ -77,6 +77,38 @@ func (handler *OrderHandler) CancelOrdersByClientID(orders []*common.Order) {
 	}
 }
 
+// 取消订单（必须相同交易对）
+func (handler *OrderHandler) CancelOrdersByOrderID(orders []*common.Order) {
+	orderIDs := []string{}
+	orderIDMap := make(map[string]*common.Order)
+	for _, order := range orders {
+		orderIDs = append(orderIDs, order.OrderID)
+		orderIDMap[order.OrderID] = order
+	}
+
+	size := len(orderIDs)
+	if size <= 0 {
+		return
+	}
+	symbol := orders[0].Symbol
+
+	// 每次最多取消10个订单
+	for i := 0; i < size; i += 10 {
+		end := i + 10
+		if end > size {
+			end = size
+		}
+		lst := orderIDs[i:end]
+		successIDs, _ := handler.BinanceDeliveryOrderClient.CancelOrdersByClientID(&lst, symbol)
+		for _, id := range successIDs {
+			_, ok := orderIDMap[id]
+			if ok {
+				orderIDMap[id].Status = common.CANCEL
+			}
+		}
+	}
+}
+
 func (handler *OrderHandler) CancelAllOrdersWithSymbol(symbol string) bool {
 	buyOrderBook := handler.BuyOrders[symbol]
 	sellOrderBook := handler.SellOrders[symbol]
@@ -238,7 +270,8 @@ func (handler *OrderHandler) CancelOrders(symbol string) {
 	orderBook.Mutex.RUnlock()
 	if len(cancelOrders) > 0 {
 		symbolContext.LastCancelFarTime = timestamp
-		handler.CancelOrdersByClientID(cancelOrders)
+		// handler.CancelOrdersByClientID(cancelOrders)
+		handler.CancelOrdersByOrderID(cancelOrders)
 	}
 }
 
