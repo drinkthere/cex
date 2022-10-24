@@ -74,12 +74,12 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 			}
 		}
 		if bidPrice > config.MinAccuracy {
-			logger.Info("deliveryBookTicker|%d|%d|%d",
+			logger.Debug("deliveryBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("deliveryBookTicker|%d|%d|%d",
+			logger.Debug("deliveryBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	} else if resp.MsgType == "deliveryDepth" {
@@ -92,12 +92,12 @@ func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
 		}
 
 		if bidPrice > config.MinAccuracy {
-			logger.Info("deliveryDepth|%d|%d|%d",
+			logger.Debug("deliveryDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("deliveryDepth|%d|%d|%d",
+			logger.Debug("deliveryDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}
@@ -193,12 +193,12 @@ func FuturesPriceHandler(resp *client.PriceWSResponse) {
 			}
 		}
 		if bidPrice > config.MinAccuracy {
-			logger.Info("futuresBookTicker|%d|%d|%d",
+			logger.Debug("futuresBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("futuresBookTicker|%d|%d|%d",
+			logger.Debug("futuresBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	} else if resp.MsgType == "futuresDepth" {
@@ -211,12 +211,12 @@ func FuturesPriceHandler(resp *client.PriceWSResponse) {
 		}
 
 		if bidPrice > config.MinAccuracy {
-			logger.Info("futuresDepth|%d|%d|%d",
+			logger.Debug("futuresDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("futuresDepth|%d|%d|%d",
+			logger.Debug("futuresDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}
@@ -237,12 +237,12 @@ func SpotPriceHandler(resp *client.PriceWSResponse) {
 			}
 		}
 		if bidPrice > config.MinAccuracy {
-			logger.Info("spotBookTicker|%d|%d|%d",
+			logger.Debug("spotBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("spotBookTicker|%d|%d|%d",
+			logger.Debug("spotBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	} else if resp.MsgType == "spotDepth" {
@@ -255,12 +255,12 @@ func SpotPriceHandler(resp *client.PriceWSResponse) {
 		}
 
 		if bidPrice > config.MinAccuracy {
-			logger.Info("spotDepth|%d|%d|%d",
+			logger.Debug("spotDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
-			logger.Info("spotDepth|%d|%d|%d",
+			logger.Debug("spotDepth|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}
