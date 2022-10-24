@@ -5,6 +5,7 @@ import (
 	"cex/common"
 	"cex/common/logger"
 	"cex/config"
+	"math"
 )
 
 type EventHandler struct {
@@ -60,29 +61,61 @@ func (handler *EventHandler) Stop() {
 }
 
 func DeliveryPriceWSHandler(resp *client.PriceWSResponse) {
+	context := &ctxt
 	config := &cfg
+	symbol := resp.Symbol
+	symbolCfg := config.SymbolConfigs[symbol]
+	symbolContext := context.GetSymbolContext(symbol)
 
 	timeStamp := common.GetTimestampInMS()
 	if resp.MsgType == "deliveryBookTicker" {
 		// 处理期货bookTicker
 		bidPrice, askPrice := 0.0, 0.0
+		bidVolume, askVolume := 0.0, 0.0
 		for _, item := range resp.Items {
+			if item.Volume < symbolCfg.EffectiveNum {
+				continue
+			}
 			if item.Direction == "buy" {
 				bidPrice = item.Price
+				bidVolume = item.Volume
 			} else if item.Direction == "sell" {
 				askPrice = item.Price
+				askVolume = item.Volume
 			}
 		}
+
+		buyDelta, sellDelta := 0.0, 0.0
 		if bidPrice > config.MinAccuracy {
+			buyDelta = math.Abs(bidPrice-symbolContext.BidPrice) / bidPrice
+			symbolContext.BidPrice = bidPrice
+			symbolContext.BidVolume = bidVolume
+			logger.Debug("binance delivery %s buy price is %f, quantity is %f at %d",
+				symbol, bidPrice, bidVolume, resp.TimeStamp)
 			logger.Debug("deliveryBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 
 		if askPrice > config.MinAccuracy {
+			sellDelta = math.Abs(askPrice-symbolContext.AskPrice) / askPrice
+			symbolContext.AskPrice = askPrice
+			symbolContext.AskVolume = askVolume
+			logger.Debug("binance delivery %s sell price is %f, quantity is %f at %d",
+				symbol, askPrice, askVolume, resp.TimeStamp)
 			logger.Debug("deliveryBookTicker|%d|%d|%d",
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
+		if bidPrice > config.MinAccuracy || askPrice > config.MinAccuracy {
+			symbolContext.LastUpdateTime = timeStamp
+		}
+
+		logger.Debug("binance delivery bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
+		// 价格变化大于一定比例才触发更新orders
+		if buyDelta > config.MinDeltaRate || sellDelta > config.MinDeltaRate {
+			go orderHandler.CancelOrders(symbol)
+		}
 	} else if resp.MsgType == "deliveryDepth" {
+		// 暂时只统计了时间，没有用到depth的Price
 		bidPrice, askPrice := 0.0, 0.0
 		for _, item := range resp.Bids {
 			bidPrice, _ = item.Price.Float64()
@@ -179,29 +212,25 @@ func DeliveryOrderWSHandler(resp *client.OrderWSResponse) {
 }
 
 func FuturesPriceHandler(resp *client.PriceWSResponse) {
-	config := &cfg
-
 	timeStamp := common.GetTimestampInMS()
 	if resp.MsgType == "futuresBookTicker" {
 		// 处理期货bookTicker
 		bidPrice, askPrice := 0.0, 0.0
+		bidVolume, askVolume := 0.0, 0.0
 		for _, item := range resp.Items {
 			if item.Direction == "buy" {
 				bidPrice = item.Price
+				bidVolume = item.Volume
 			} else if item.Direction == "sell" {
 				askPrice = item.Price
+				askVolume = item.Volume
 			}
 		}
-		if bidPrice > config.MinAccuracy {
-			logger.Debug("futuresBookTicker|%d|%d|%d",
-				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
-		}
+		logger.Debug("binance futures bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
+		go UpdatePrice(resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp, timeStamp, "futures")
 
-		if askPrice > config.MinAccuracy {
-			logger.Debug("futuresBookTicker|%d|%d|%d",
-				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
-		}
 	} else if resp.MsgType == "futuresDepth" {
+		config := &cfg
 		bidPrice, askPrice := 0.0, 0.0
 		for _, item := range resp.Bids {
 			bidPrice, _ = item.Price.Float64()
@@ -222,30 +251,60 @@ func FuturesPriceHandler(resp *client.PriceWSResponse) {
 	}
 }
 
-func SpotPriceHandler(resp *client.PriceWSResponse) {
+// 更新参照组最新买卖价格
+func UpdatePrice(symbol string, bidPrice float64, bidVolume float64,
+	askPrice float64, askVolume float64, respTs int64, timestamp int64, ptype string) {
+	context := &ctxt
 	config := &cfg
 
+	deliverySymbols := context.GetDeliverySymbol(symbol)
+	for _, deliverySymbol := range deliverySymbols {
+		name := common.FormatPriceName(cfg.Exchange, deliverySymbol, ptype)
+		priceDataItem, ok := ctxt.Prices.Items[name]
+		if !ok {
+			continue
+		}
+
+		if bidPrice > config.MinAccuracy || askPrice > config.MinAccuracy {
+			priceDataItem.LastUpdateTime = timestamp
+		}
+
+		if bidPrice > config.MinAccuracy {
+			priceDataItem.BidPrice = bidPrice
+			priceDataItem.BidVolume = bidVolume
+			logger.Debug("%sBookTicker|%d|%d|%d",
+				ptype, timestamp, respTs, timestamp-respTs)
+		}
+
+		if askPrice > config.MinAccuracy {
+			priceDataItem.AskPrice = askPrice
+			priceDataItem.AskVolume = askVolume
+			logger.Debug("%sBookTicker|%d|%d|%d",
+				ptype, timestamp, respTs, timestamp-respTs)
+		}
+	}
+}
+
+func SpotPriceHandler(resp *client.PriceWSResponse) {
 	timeStamp := common.GetTimestampInMS()
 	if resp.MsgType == "spotBookTicker" {
 		// 处理期货bookTicker
 		bidPrice, askPrice := 0.0, 0.0
+		bidVolume, askVolume := 0.0, 0.0
 		for _, item := range resp.Items {
 			if item.Direction == "buy" {
 				bidPrice = item.Price
+				bidVolume = item.Volume
 			} else if item.Direction == "sell" {
 				askPrice = item.Price
+				askVolume = item.Volume
 			}
 		}
-		if bidPrice > config.MinAccuracy {
-			logger.Debug("spotBookTicker|%d|%d|%d",
-				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
-		}
 
-		if askPrice > config.MinAccuracy {
-			logger.Debug("spotBookTicker|%d|%d|%d",
-				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
-		}
+		go UpdatePrice(resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp, timeStamp, "spot")
+		logger.Debug("binance spot bookTicker symbol: %s, bidPrice:%f, bidVolume:%f, askPrice:%f, askVolume:%f, updateTime:%d", resp.Symbol, bidPrice, bidVolume, askPrice, askVolume, resp.TimeStamp)
 	} else if resp.MsgType == "spotDepth" {
+		config := &cfg
 		bidPrice, askPrice := 0.0, 0.0
 		for _, item := range resp.Bids {
 			bidPrice, _ = item.Price.Float64()
@@ -264,4 +323,5 @@ func SpotPriceHandler(resp *client.PriceWSResponse) {
 				timeStamp, resp.TimeStamp, timeStamp-resp.TimeStamp)
 		}
 	}
+
 }
