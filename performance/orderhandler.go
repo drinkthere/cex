@@ -195,7 +195,7 @@ func (handler *OrderHandler) UpdateOrders() {
 	symbolContext := ctxt.GetSymbolContext(symbol)
 	spotPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "spot")
 	futuresPriceItem := ctxt.GetPriceItem(cfg.Exchange, symbol, "futures")
-	logger.Info("%v|%v|%v|%v", symbolContext.Risk != 0, spotPriceItem != nil, futuresPriceItem != nil, symbolContext.BidPrice >= cfg.MinAccuracy)
+	logger.Info("%v|%v|%v|%v|%v", symbolContext.Risk, symbolContext.Risk != 0, spotPriceItem != nil, futuresPriceItem != nil, symbolContext.BidPrice >= cfg.MinAccuracy)
 	if symbolContext.Risk != 0 || symbol == "BNBUSD_PERP" {
 		return
 	}
