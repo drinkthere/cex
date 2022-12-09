@@ -23,7 +23,11 @@ build: fmt vet lint
 
 build-perf: fmt vet lint
 	go mod vendor
-	go build -o bin/perf ./performance/*.go
+	go build -o bin/perf ./performance/main.go
+
+build-fr: fmt vet lint
+	go mod vendor
+	go build -o bin/fr ./fundingrate/*.go
 
 fmt:
 	go fmt ./...

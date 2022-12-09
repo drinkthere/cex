@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/adshao/go-binance/v2 v2.3.9
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/joho/godotenv v1.4.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/shopspring/decimal v1.3.1
 	go.uber.org/zap v1.23.0

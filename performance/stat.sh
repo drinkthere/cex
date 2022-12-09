@@ -70,3 +70,11 @@ grep 'cancelByOrderId' * | awk -F '|' '{if($NF/10**6 > 10 && $NF/10**6 <= 20 ){s
 grep 'cancelByOrderId' * | awk -F '|' '{if($NF/10**6 > 20 && $NF/10**6 <= 50 ){sum+=1}} END {print sum}';
 grep 'cancelByOrderId' * | awk -F '|' '{if($NF/10**6 > 50 && $NF/10**6 <= 100 ){sum+=1}} END {print sum}';
 grep 'cancelByOrderId' * | awk -F '|' '{if($NF/10**6 > 100 ){sum+=1}} END {print sum}';
+
+grep 'cancelByAll' * | wc -l
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 <= 8){sum+=1}} END {print sum}'
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 > 8 && $NF/10**6 <= 10 ){sum+=1}} END {print sum}';
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 > 10 && $NF/10**6 <= 20 ){sum+=1}} END {print sum}';
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 > 20 && $NF/10**6 <= 50 ){sum+=1}} END {print sum}';
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 > 50 && $NF/10**6 <= 100 ){sum+=1}} END {print sum}';
+grep 'cancelByAll' * | awk -F '|' '{if($NF/10**6 > 100 ){sum+=1}} END {print sum}';
