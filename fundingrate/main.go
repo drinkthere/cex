@@ -23,6 +23,7 @@ var (
 )
 
 func processing() {
+	fmt.Printf("processiong at %s", time.Now().Format("2006-01-02 15:04:05"))
 	infos, err := client.NewPremiumIndexService().Do(context.Background())
 	if err != nil {
 		fmt.Printf("get binance exchange info failed, error is %s", err.Error())
