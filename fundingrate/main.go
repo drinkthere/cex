@@ -81,4 +81,9 @@ func main() {
 	// 每小时处理一次
 	// processing()
 	go common.Timer(60*time.Minute, processing)
+
+	// 阻塞主进程
+	for {
+		time.Sleep(24 * time.Hour)
+	}
 }
